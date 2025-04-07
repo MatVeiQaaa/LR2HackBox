@@ -27,3 +27,12 @@ jobs:
         with:
           name: release-build
           path: bin/Release/azop.dll
+          
+      - name: Publish release
+        uses: marvinpinto/action-automatic-releases@latest
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "latest"
+          prerelease: false
+          title: "Latest Build"
+          files: bin/Release/azop.dll
