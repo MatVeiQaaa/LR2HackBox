@@ -26,10 +26,14 @@ private:
 
 	bool mIsRandomSelectEntry = false;
 
+	static void OnAddToAvgBpmSum(SafetyHookContext& regs);
+	static void OnCalcAvgSpeedmult(SafetyHookContext& regs);
+
 	void StartRandomFromFolder();
 
 	std::vector<SafetyHookMid> mMidHooks;
 
 	bool mIsRetryTweaks = false;
 	bool mIsRandomSelect = false;
+	bool mIsMainBPM = false;
 };

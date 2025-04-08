@@ -1,6 +1,7 @@
 #include "Misc.hpp"
 
 #include <iostream>
+#include <unordered_map>
 #include "LR2HackBox/LR2HackBox.hpp"
 
 #include "safetyhook/safetyhook.hpp"
@@ -226,6 +227,82 @@ void Misc::OnOpenFolderPlaySound(SafetyHookContext& regs) {
 	if (game.sSelect.stack_isFolder[game.sSelect.cur] == 0) {
 		AddRandomSelectBar();
 	}
+}
+
+
+static std::unordered_map<double, int> bpmRefcount;
+void Misc::OnAddToAvgBpmSum(SafetyHookContext& regs) {
+	Misc& misc = *(Misc*)(LR2HackBox::Get().mMisc);
+	if (!misc.mIsMainBPM) return;
+
+	LR2::game& game = *LR2HackBox::Get().GetGame();
+	if (game.config.play.hsfix != 3) return;
+
+	double bpm = 0;
+	__asm {
+		fld ST(1)
+		fstp bpm
+	}
+
+	if (!bpmRefcount.contains(bpm)) {
+		bpmRefcount[bpm] = 1;
+	}
+	else {
+		bpmRefcount[bpm] = bpmRefcount[bpm] + 1;
+	}
+}
+
+void Misc::OnCalcAvgSpeedmult(SafetyHookContext& regs) {
+	Misc& misc = *(Misc*)(LR2HackBox::Get().mMisc);
+	if (!misc.mIsMainBPM) return;
+
+	LR2::game& game = *LR2HackBox::Get().GetGame();
+
+	// Calculate mainBPM with longest duration bpm.
+	/*std::unordered_map<double, double> bpmDuration;
+
+	double lastNoteTime = 0;
+	for (int i = 0; i < game.gameplay.bmsobj.count; i++) {
+		if (10 <= game.gameplay.bmsobj.notes[i].op && game.gameplay.bmsobj.notes[i].op < 29)
+			lastNoteTime = game.gameplay.bmsobj.notes[i].realTiming;
+	}
+	for (int i = 0; i < game.gameplay.bpmt_count - 1; i++) {
+		if (game.gameplay.bpmt_data[i].realtime > lastNoteTime) break;
+		double bpm = game.gameplay.bpmt_data[i].BPM;
+		double timePointDuration = game.gameplay.bpmt_data[i + 1].realtime - game.gameplay.bpmt_data[i].realtime;
+		if (!bpmDuration.contains(bpm)) {
+			bpmDuration[bpm] = timePointDuration;
+		}
+		else {
+			bpmDuration[bpm] = bpmDuration[bpm] + timePointDuration;
+		}
+	}
+
+	double mainBpm = 0.f;
+	double highestDuration = 0;
+	for (auto& [bpm, duration] : bpmDuration) {
+		if (duration > highestDuration) {
+			highestDuration = duration;
+			mainBpm = bpm;
+		}
+	}*/
+
+	// Calculate mainBPM with bpm most notes use.
+	double mainBpm = 0;
+	int highestRefcount = 0;
+	for (auto& [bpm, refcount] : bpmRefcount) {
+		if (refcount > highestRefcount) {
+			highestRefcount = refcount;
+			mainBpm = bpm;
+		}
+	}
+	bpmRefcount.clear();
+
+	__asm {
+		fld mainBpm
+		fstp ST(1) // gameplay.speedmultiplier = 150.f / ST(0)
+	}
+
 	return;
 }
 
@@ -234,14 +311,19 @@ bool Misc::Init(uintptr_t moduleBase) {
 
 	mIsRetryTweaks = LR2HackBox::Get().mConfig->ReadValue("bRetryTweaks") == "true" ? true : false;
 	mIsRandomSelect = LR2HackBox::Get().mConfig->ReadValue("bRandomSelect") == "true" ? true : false;
+	mIsMainBPM = LR2HackBox::Get().mConfig->ReadValue("bMainBPM") == "true" ? true : false;
 
 	mMidHooks.push_back(safetyhook::create_mid((void*)(moduleBase + 0x9573), OnSetRetryFlag));
 	mMidHooks.push_back(safetyhook::create_mid((void*)(moduleBase + 0x0198C1), OnPlayISetSelecter));
 	mMidHooks.push_back(safetyhook::create_mid((void*)(moduleBase + 0x02D36C), OnInitPlay));
 	mMidHooks.push_back(safetyhook::create_mid((void*)(moduleBase + 0x0AD24D), OnInitRetry));
+
 	mMidHooks.push_back(safetyhook::create_mid((void*)(moduleBase + 0x029AFA), OnRandomMixInput));
 	mMidHooks.push_back(safetyhook::create_mid((void*)(moduleBase + 0x031BB6), OnSceneInitSwitch));
 	mMidHooks.push_back(safetyhook::create_mid((void*)(moduleBase + 0x01EE32), OnOpenFolderPlaySound));
+
+	mMidHooks.push_back(safetyhook::create_mid((void*)(moduleBase + 0x0B32AD), OnAddToAvgBpmSum));
+	mMidHooks.push_back(safetyhook::create_mid((void*)(moduleBase + 0x0B4366), OnCalcAvgSpeedmult));
 
 	return true;
 }
@@ -278,6 +360,15 @@ void Misc::Menu() {
 		LR2HackBox::Get().mConfig->WriteValue("bRandomSelect", mIsRandomSelect ? "true" : "false");
 		LR2HackBox::Get().mConfig->SaveConfig();
 	}
+	ImGui::SameLine();
+	HelpMarker("Adds 'RANDOM SELECT' entry to song folder, which starts a random song from it");
+
+	if (ImGui::Checkbox("MainBPM hi-speed mode", &mIsMainBPM)) {
+		LR2HackBox::Get().mConfig->WriteValue("bMainBPM", mIsMainBPM ? "true" : "false");
+		LR2HackBox::Get().mConfig->SaveConfig();
+	}
+	ImGui::SameLine();
+	HelpMarker("Replaces the effect of AverageBPM hi-speed mode to that of MainBPM");
 
 	/*if (ImGui::Button("Start Random Song")) {
 		StartRandomFromFolder();
