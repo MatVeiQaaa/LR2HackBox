@@ -42,7 +42,7 @@ void Misc::OnPlayISetSelecter(SafetyHookContext& regs) {
 
 	LR2::game& game = *LR2HackBox::Get().GetGame();
 	if (!(game.procPhase == 2 || game.procPhase == 3)) return;
-	if (game.gameplay.replay.status != 0) return;
+	if (game.gameplay.replay.status > 1) return;
 	if (game.gameplay.player[0].totalnotes <= game.gameplay.player[0].note_current) return;
 	if (game.KeyInput.p1_buttonInput[2] || game.KeyInput.p2_buttonInput[2]) {
 		game.procPhase = 0;
