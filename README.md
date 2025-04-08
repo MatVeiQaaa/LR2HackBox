@@ -1,1 +1,13 @@
 # LR2HackBox
+![preview](https://github.com/user-attachments/assets/3ea78107-1466-4aac-ab60-bcc4ad83cd01)
+
+A collection of various QoL (Quality of Life) features and whatever else i may come up with in the future for Lunatic Rave 2.
+
+ImGui menu from which you can control all of the features can be brought up with 'INSERT' key in-game.
+
+Features:
+- Unrandomizer – Allows you to control which arrange 'RANDOM' function will result in. Currently works only for 7K SP mode. Also has a history of each random arrange you got, regardless of using unrandomizer or not.
+- Restart Tweaks – Adds ability to restart from play scene with new or same random arrange (if random is used), as well as from result screen.
+- Random Select – Adds 'RANDOM SELECT' entry as the last element of song select list, when a song folder is opened. Upon selection of that entry, a song from that folder will be started at random.
+- MainBPM hi-speed mode – Replaces AvgBPM hi-speed fix mode with MainBPM, which selects the BPM which most notes in the chart use to calculate the speed against.
+- Hide Scratch Notes – Makes scratch notes invisible. For no practical reason. Only works for 7K SP.
