@@ -216,8 +216,7 @@ bool ImGuiInjector::WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
         ImGuiMenu* menu = *(it._Ptr);
         menu->MessageHandler(hWnd, msg, wParam, lParam);
     }
-    //if (IsMenuRunning()) ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam);
-    ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam);
+    if (IsMenuRunning()) ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam);
 
     if (ImGuiInjector::WantsMouseInput() && msg == WM_MOUSEWHEEL) return true;
 
