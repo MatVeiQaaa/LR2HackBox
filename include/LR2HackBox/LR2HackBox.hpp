@@ -24,7 +24,7 @@ public:
 	LR2HackBoxMenu mMenu;
 
 	ModFeature* mUnrandomizer = nullptr;
-	ModFeature* mAprilFools = nullptr;
+	ModFeature* mFunny = nullptr;
 	ModFeature* mMisc = nullptr;
 
 	ConfigManager* mConfig = nullptr;

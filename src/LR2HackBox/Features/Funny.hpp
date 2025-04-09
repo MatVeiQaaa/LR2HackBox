@@ -3,14 +3,10 @@
 #include "safetyhook/safetyhook.hpp"
 
 #include <stdint.h>
-class AprilFools : public ModFeature {
+class Funny : public ModFeature {
 public:
 	bool Init(uintptr_t moduleBase);
 	bool Deinit();
-
-	bool GetEnabled();
-	void SetEnabled(bool value);
-	void ToggleEnabled();
 
 	void Menu();
 
@@ -19,5 +15,6 @@ private:
 
 	std::vector<SafetyHookMid> mMidHooks;
 
-	bool mIsEnabled = false;
+	bool mIsInvisibleScratch = false;
+	bool mIsMetronome = false;
 };

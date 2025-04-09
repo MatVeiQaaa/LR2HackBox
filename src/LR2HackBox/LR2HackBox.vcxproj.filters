@@ -21,7 +21,7 @@
     <ClInclude Include="Features\Unrandomizer_SeedMap.hpp">
       <Filter>Header Files\Features</Filter>
     </ClInclude>
-    <ClInclude Include="Features\AprilFools.hpp">
+    <ClInclude Include="Features\Funny.hpp">
       <Filter>Header Files\Features</Filter>
     </ClInclude>
     <ClInclude Include="Features\Misc.hpp">
@@ -35,7 +35,7 @@
     <ClCompile Include="Features\Unrandomizer.cpp">
       <Filter>Source Files\Features</Filter>
     </ClCompile>
-    <ClCompile Include="Features\AprilFools.cpp">
+    <ClCompile Include="Features\Funny.cpp">
       <Filter>Source Files\Features</Filter>
     </ClCompile>
     <ClCompile Include="Features\Misc.cpp">

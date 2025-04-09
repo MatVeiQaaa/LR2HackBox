@@ -9,6 +9,8 @@ public:
 	bool Init(uintptr_t moduleBase);
 	bool Deinit();
 
+	void SetMetronome(bool value);
+
 	void Menu();
 
 private:
@@ -24,10 +26,19 @@ private:
 	static void OnSceneInitSwitch(SafetyHookContext& regs);
 	static void OnOpenFolderPlaySound(SafetyHookContext& regs);
 
-	bool mIsRandomSelectEntry = false;
+	bool mRandSelCustomEntry = false;
+	int mRandSelRealIdx = 0;
+	int mRandSelRandIdx = 0;
 
 	static void OnAddToAvgBpmSum(SafetyHookContext& regs);
 	static void OnCalcAvgSpeedmult(SafetyHookContext& regs);
+
+	std::unordered_map<double, int> mMainBPMBpmRefcount;
+
+	static void OnDrawNotesGetSongtimer(SafetyHookContext& regs);
+
+	int mMetronomeLastPlayedBeat = 0;
+	int mMetronomePrevMeasureIdx = -1;
 
 	void StartRandomFromFolder();
 
@@ -36,4 +47,5 @@ private:
 	bool mIsRetryTweaks = false;
 	bool mIsRandomSelect = false;
 	bool mIsMainBPM = false;
+	bool mIsMetronome = false;
 };

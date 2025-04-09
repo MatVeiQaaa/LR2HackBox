@@ -1,7 +1,10 @@
+#define NOMINMAX
+
 #include "Misc.hpp"
 
 #include <iostream>
 #include <unordered_map>
+#include <algorithm>
 #include "LR2HackBox/LR2HackBox.hpp"
 
 #include "safetyhook/safetyhook.hpp"
@@ -36,12 +39,24 @@ static void StopKeysounds() {
 	}
 }
 
+static LR2::SOUNDDATA metronomeMeasureFx;
+static LR2::SOUNDDATA metronomeBeatFx;
+
 void Misc::OnPlayISetSelecter(SafetyHookContext& regs) {
 	Misc& misc = *(Misc*)(LR2HackBox::Get().mMisc);
-	if (!misc.mIsRetryTweaks) return;
 
 	LR2::game& game = *LR2HackBox::Get().GetGame();
+
 	if (!(game.procPhase == 2 || game.procPhase == 3)) return;
+
+	typedef int(__cdecl* tReleaseSound)(LR2::AUDIO* aud, LR2::SOUNDDATA* sound);
+	tReleaseSound ReleaseSound = (tReleaseSound)0x4B8040;
+
+	ReleaseSound(&game.audio, &metronomeMeasureFx);
+	ReleaseSound(&game.audio, &metronomeBeatFx);
+
+	if (!misc.mIsRetryTweaks) return;
+
 	if (game.gameplay.replay.status > 1) return;
 	if (game.gameplay.player[0].totalnotes <= game.gameplay.player[0].note_current) return;
 	if (game.KeyInput.p1_buttonInput[2] || game.KeyInput.p2_buttonInput[2]) {
@@ -82,6 +97,8 @@ void Misc::OnPlayISetSelecter(SafetyHookContext& regs) {
 void Misc::OnInit(SafetyHookContext& regs) {
 	LR2::game& game = *LR2HackBox::Get().GetGame();
 	mOrigGaugeType = game.config.play.gaugeOption[0];
+	mMetronomeLastPlayedBeat = 0;
+	mMetronomePrevMeasureIdx = -1;
 }
 
 void Misc::OnInitPlay(SafetyHookContext& regs) {
@@ -94,10 +111,6 @@ void Misc::OnInitRetry(SafetyHookContext& regs) {
 	misc.OnInit(regs);
 }
 
-
-static int realIdx = 0;
-static int randIdx = 0;
-
 void Misc::OnRandomMixInput(SafetyHookContext& regs) {
 	LR2::game& game = *LR2HackBox::Get().GetGame();
 	if (game.sSelect.bmsList[game.sSelect.cur_song].folderType != 9 && std::string(game.sSelect.bmsList[game.sSelect.cur_song].filepath.body) != "randomselect") return;
@@ -109,12 +122,12 @@ void Misc::OnRandomMixInput(SafetyHookContext& regs) {
 	typedef int(__cdecl* tGetRand)(int RandMax);
 	tGetRand GetRand = (tGetRand)0x6C95E0;
 	
-	realIdx = game.sSelect.cur_song;
+	misc.mRandSelRealIdx = game.sSelect.cur_song;
 	while (game.sSelect.bmsListCount > 1) {
-		randIdx = GetRand(game.sSelect.bmsListCount - 1);
-		if (game.sSelect.bmsList[randIdx].keymode >= 5) break;
+		misc.mRandSelRandIdx = GetRand(game.sSelect.bmsListCount - 1);
+		if (game.sSelect.bmsList[misc.mRandSelRandIdx].keymode >= 5) break;
 	}
-	misc.mIsRandomSelectEntry = true;
+	misc.mRandSelCustomEntry = true;
 
 	game.procSelecter = 3;
 }
@@ -165,17 +178,29 @@ static void FillBMSMETA(LR2::BMSMETA& meta, const LR2::SONGDATA& song) {
 }
 
 void Misc::OnSceneInitSwitch(SafetyHookContext& regs) {
-	if (regs.eax != 3) return; // Before decide scene init.
 	Misc& misc = *(Misc*)(LR2HackBox::Get().mMisc);
-	if (!misc.mIsRandomSelect) return;
-	if (!misc.mIsRandomSelectEntry) return;
-
 	LR2::game& game = *LR2HackBox::Get().GetGame();
-	game.sSelect.cur_song = randIdx;
-	FillBMSMETA(game.sSelect.metaSelected, game.sSelect.bmsList[game.sSelect.cur_song]);
-	UpdateSongdataStrings();
 
-	misc.mIsRandomSelectEntry = false;
+	switch (regs.eax) {
+	case 3: // Decide
+		if (!misc.mIsRandomSelect) break;
+		if (!misc.mRandSelCustomEntry) break;
+
+		game.sSelect.cur_song = misc.mRandSelRandIdx;
+		FillBMSMETA(game.sSelect.metaSelected, game.sSelect.bmsList[game.sSelect.cur_song]);
+		UpdateSongdataStrings();
+
+		misc.mRandSelCustomEntry = false;
+		break;
+	case 4: // Play
+		if (!misc.mIsMetronome) return;
+		typedef int(__cdecl* tLoadSound)(LR2::AUDIO* aud, LR2::SOUNDDATA* sound, LR2::CSTR filepath, int loop, int disableDSP, int previewFlag);
+		tLoadSound LoadSound = (tLoadSound)0x4B8BB0;
+
+		LoadSound(&game.audio, &metronomeMeasureFx, LR2::CSTR("LR2files\\Sound\\LR2HackBox\\metronome-measure.wav"), 0, game.config.sound.disabledsp, 0);
+		LoadSound(&game.audio, &metronomeBeatFx, LR2::CSTR("LR2files\\Sound\\LR2HackBox\\metronome-beat.wav"), 0, game.config.sound.disabledsp, 0);
+		break;
+	}
 }
 
 void Misc::StartRandomFromFolder() {
@@ -307,6 +332,48 @@ void Misc::OnCalcAvgSpeedmult(SafetyHookContext& regs) {
 	return;
 }
 
+static double measureSize = 0;
+static int beatsPerMeasure = 0;
+void Misc::OnDrawNotesGetSongtimer(SafetyHookContext& regs) {
+	Misc& misc = *(Misc*)(LR2HackBox::Get().mMisc);
+	if (!misc.mIsMetronome) return;
+
+	double songtimer = 0;
+	__asm {
+		fst songtimer
+	}
+
+	LR2::game& game = *LR2HackBox::Get().GetGame();
+	int currentMeasureIdx = std::min(game.gameplay.bmsobj_line.count - 1, misc.mMetronomePrevMeasureIdx + 1);
+	int nextMeasureIdx = std::min(game.gameplay.bmsobj_line.count - 1, currentMeasureIdx + 1);
+	if (game.gameplay.bmsobj_line.notes[nextMeasureIdx].bmsTiming <= songtimer) {
+		misc.mMetronomePrevMeasureIdx = currentMeasureIdx;
+		currentMeasureIdx = std::min(game.gameplay.bmsobj_line.count - 1, misc.mMetronomePrevMeasureIdx + 1);
+		nextMeasureIdx = std::min(game.gameplay.bmsobj_line.count - 1, currentMeasureIdx + 1);
+	}
+
+	const LR2::NoteStruct& currentMeasure = game.gameplay.bmsobj_line.notes[currentMeasureIdx];
+	int currentBeat = (songtimer - currentMeasure.bmsTiming) / 480.f;
+
+	typedef int(__cdecl* tGamePlaySound)(LR2::AUDIO* aud, LR2::SOUNDDATA* sound, LR2::FMOD_CHANNELGROUP* channelgroup, int stage);
+	tGamePlaySound GamePlaySound = (tGamePlaySound)0x4B8F20;
+	if (currentBeat != misc.mMetronomeLastPlayedBeat) {
+		misc.mMetronomeLastPlayedBeat = currentBeat;
+		if (currentBeat == 0) {
+			LR2::SOUNDDATA* sfx = metronomeBeatFx.load == 1 ? &metronomeMeasureFx : &game.audio.sysSound.folder_open;
+			GamePlaySound(&game.audio, sfx, game.audio.chnBgm, -1);
+		}
+		else {
+			LR2::SOUNDDATA* sfx = metronomeBeatFx.load == 1 ? &metronomeBeatFx : &game.audio.sysSound.folder_close;
+			GamePlaySound(&game.audio, sfx, game.audio.chnBgm, -1);
+		}
+	}
+}
+
+void Misc::SetMetronome(bool value) {
+	mIsMetronome = value;
+}
+
 bool Misc::Init(uintptr_t moduleBase) {
 	Misc::mModuleBase = moduleBase;
 
@@ -325,6 +392,8 @@ bool Misc::Init(uintptr_t moduleBase) {
 
 	mMidHooks.push_back(safetyhook::create_mid((void*)(moduleBase + 0x0B32AD), OnAddToAvgBpmSum));
 	mMidHooks.push_back(safetyhook::create_mid((void*)(moduleBase + 0x0B4366), OnCalcAvgSpeedmult));
+
+	mMidHooks.push_back(safetyhook::create_mid((void*)(moduleBase + 0x6D86), OnDrawNotesGetSongtimer));
 
 	return true;
 }

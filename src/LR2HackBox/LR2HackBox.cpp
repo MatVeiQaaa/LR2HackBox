@@ -8,7 +8,7 @@
 #include <string>
 
 #include "Features/Unrandomizer.hpp"
-#include "Features/AprilFools.hpp"
+#include "Features/Funny.hpp"
 #include "Features/Misc.hpp"
 
 #pragma comment(lib, "Helpers.lib")
@@ -33,11 +33,11 @@ bool LR2HackBox::Hook() {
 	mConfig = new ConfigManager("LR2HackBox.ini");
 
 	mUnrandomizer = new Unrandomizer();
-	mAprilFools = new AprilFools();
+	mFunny = new Funny();
 	mMisc = new Misc();
 
 	mUnrandomizer->Init(mModuleBase);
-	mAprilFools->Init(mModuleBase);
+	mFunny->Init(mModuleBase);
 	mMisc->Init(mModuleBase);
 
 	return true;
@@ -45,11 +45,11 @@ bool LR2HackBox::Hook() {
 
 bool LR2HackBox::Unhook() {
 	mUnrandomizer->Deinit();
-	mAprilFools->Deinit();
+	mFunny->Deinit();
 	mMisc->Deinit();
 	delete(mConfig);
 	delete(mUnrandomizer);
-	delete(mAprilFools);
+	delete(mFunny);
 	delete(mMisc);
 	return true;
 }
@@ -73,7 +73,7 @@ void LR2HackBoxMenu::Loop() {
 	}
 
 	if (ImGui::CollapsingHeader("Funny")) {
-		((AprilFools*)LR2HackBox::Get().mAprilFools)->Menu();
+		((Funny*)LR2HackBox::Get().mFunny)->Menu();
 	}
 
 	ImGui::End();

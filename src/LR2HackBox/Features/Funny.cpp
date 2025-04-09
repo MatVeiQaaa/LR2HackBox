@@ -1,16 +1,17 @@
-#include "AprilFools.hpp"
+#include "Funny.hpp"
 
 #include <iostream>
 #include "LR2HackBox/LR2HackBox.hpp"
+#include "Misc.hpp"
 
 #include "safetyhook/safetyhook.hpp"
 #include "imgui/imgui.h"
 
 #pragma comment(lib, "libSafetyhook.lib")
 
-void AprilFools::OnDrawNote(SafetyHookContext& regs) {
-	AprilFools& aprilFools = *(AprilFools*)(LR2HackBox::Get().mAprilFools);
-	if (!aprilFools.GetEnabled()) return;
+void Funny::OnDrawNote(SafetyHookContext& regs) {
+	Funny& funny = *(Funny*)(LR2HackBox::Get().mFunny);
+	if (!funny.mIsInvisibleScratch) return;
 
 	LR2::game& game = *LR2HackBox::Get().GetGame();
 	if (game.gameplay.keymode != 7) return;
@@ -18,28 +19,16 @@ void AprilFools::OnDrawNote(SafetyHookContext& regs) {
 	if (regs.esi == 0) regs.esi++;
 }
 
-bool AprilFools::Init(uintptr_t moduleBase) {
-	AprilFools::mModuleBase = moduleBase;
+bool Funny::Init(uintptr_t moduleBase) {
+	Funny::mModuleBase = moduleBase;
 
 	mMidHooks.push_back(safetyhook::create_mid((void*)(moduleBase + 0x7098), OnDrawNote));
 
 	return true;
 }
 
-bool AprilFools::Deinit() {
+bool Funny::Deinit() {
 	return true;
-}
-
-bool AprilFools::GetEnabled() {
-	return mIsEnabled;
-}
-
-void AprilFools::SetEnabled(bool value) {
-	mIsEnabled = value;
-}
-
-void AprilFools::ToggleEnabled() {
-	mIsEnabled = !mIsEnabled;
 }
 
 static void HelpMarker(const char* desc) {
@@ -53,14 +42,20 @@ static void HelpMarker(const char* desc) {
 	}
 }
 
-void AprilFools::Menu() {
+void Funny::Menu() {
 	LR2::game* game = LR2HackBox::Get().GetGame();
 
 	ImGui::Indent();
 
-	ImGui::Checkbox("Invisible Scratch", &mIsEnabled);
+	ImGui::Checkbox("Invisible Scratch", &mIsInvisibleScratch);
 	ImGui::SameLine();
 	HelpMarker("When enabled, will stop scratch notes from rendering.");
+
+	if (ImGui::Checkbox("Metronome", &mIsMetronome)) {
+		((Misc*)LR2HackBox::Get().mMisc)->SetMetronome(mIsMetronome);
+	}
+	ImGui::SameLine();
+	HelpMarker("Enables the metronome sound in playing.\n  Expects 'metronome-measure.wav' and 'metronome-beat.wav'\n  in LR2files\\Sound\\LR2HackBox\\ directory\n  or defaults to using f-open and f-close");
 
 	ImGui::Unindent();
 }
