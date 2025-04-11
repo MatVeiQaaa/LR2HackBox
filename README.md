@@ -3,6 +3,8 @@
 
 A collection of various QoL (Quality of Life) features and whatever else i may come up with in the future for Lunatic Rave 2.
 
+The .dll file must be injected into the game process in any convenient way. I recommend using https://github.com/SayakaIsBaka/lr2_chainload for automatic injection on game launch.
+
 ImGui menu from which you can control all of the features can be brought up with 'INSERT' key in-game.
 
 Features:
