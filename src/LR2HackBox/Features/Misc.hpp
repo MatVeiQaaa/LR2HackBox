@@ -40,6 +40,8 @@ private:
 	int mMetronomeLastPlayedBeat = 0;
 	int mMetronomePrevMeasureIdx = -1;
 
+	static int OnSaveDrawScreenToPNG(int x1, int y1, int x2, int y2, const char* FileName, int CompressionLevel);
+
 	void StartRandomFromFolder();
 
 	std::vector<SafetyHookMid> mMidHooks;
@@ -48,4 +50,5 @@ private:
 	bool mIsRandomSelect = false;
 	bool mIsMainBPM = false;
 	bool mIsMetronome = false;
+	bool mIsRerouteScreenshots = false;
 };

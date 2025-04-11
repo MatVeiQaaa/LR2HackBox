@@ -10,3 +10,6 @@
 [submodule "ext/LR2Mem"]
 	path = ext/LR2Mem
 	url = git@github.com:MatVeiQaaa/LR2Mem.git
+[submodule "ext/StackWalker"]
+	path = ext/StackWalker
+	url = git@github.com:JochenKalmbach/StackWalker.git

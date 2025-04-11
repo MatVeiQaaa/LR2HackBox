@@ -5,6 +5,12 @@
 
 #include "LR2Mem/LR2Bindings.hpp"
 
+#ifndef NDEBUG
+#define IFDEBUG(x) x
+#else
+#define IFDEBUG(x)
+#endif
+
 class LR2HackBoxMenu : public ImGuiMenu {
 public:
 	void Loop();
@@ -26,6 +32,7 @@ public:
 	ModFeature* mUnrandomizer = nullptr;
 	ModFeature* mFunny = nullptr;
 	ModFeature* mMisc = nullptr;
+	IFDEBUG(ModFeature* mMemoryTracker = nullptr);
 
 	ConfigManager* mConfig = nullptr;
 private:

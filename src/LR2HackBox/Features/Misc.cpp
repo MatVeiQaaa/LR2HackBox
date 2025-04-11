@@ -5,12 +5,26 @@
 #include <iostream>
 #include <unordered_map>
 #include <algorithm>
+#include <filesystem>
 #include "LR2HackBox/LR2HackBox.hpp"
 
 #include "safetyhook/safetyhook.hpp"
+#include "minhook/include/MinHook.h"
 #include "imgui/imgui.h"
 
 #pragma comment(lib, "libSafetyhook.lib")
+
+#if defined _M_X64
+#pragma comment(lib, "libMinHook.x64.lib")
+#elif defined _M_IX86
+#pragma comment(lib, "libMinHook.x86.lib")
+#endif
+
+template <typename T>
+inline MH_STATUS MH_CreateHookEx(LPVOID pTarget, LPVOID pDetour, T** ppOriginal)
+{
+	return MH_CreateHook(pTarget, pDetour, reinterpret_cast<LPVOID*>(ppOriginal));
+}
 
 void Misc::OnSetRetryFlag(SafetyHookContext& regs) {
 	Misc& misc = *(Misc*)(LR2HackBox::Get().mMisc);
@@ -370,6 +384,18 @@ void Misc::OnDrawNotesGetSongtimer(SafetyHookContext& regs) {
 	}
 }
 
+typedef int(__cdecl* tSaveDrawScreenToPNG)(int x1, int y1, int x2, int y2, const char* FileName, int CompressionLevel);
+tSaveDrawScreenToPNG SaveDrawScreenToPNG = (tSaveDrawScreenToPNG)0x510060;
+int Misc::OnSaveDrawScreenToPNG(int x1, int y1, int x2, int y2, const char* FileName, int CompressionLevel) {
+	Misc& misc = *(Misc*)(LR2HackBox::Get().mMisc);
+	if (!misc.mIsRerouteScreenshots) return SaveDrawScreenToPNG(x1, y1, x2, y2, FileName, CompressionLevel);
+	std::string directory = "screenshots\\";
+	std::string path = directory + FileName;
+	if (!std::filesystem::directory_entry(directory).exists())
+		std::filesystem::create_directories(directory);
+	return SaveDrawScreenToPNG(x1, y1, x2, y2, path.c_str(), CompressionLevel);
+}
+
 void Misc::SetMetronome(bool value) {
 	mIsMetronome = value;
 }
@@ -380,6 +406,7 @@ bool Misc::Init(uintptr_t moduleBase) {
 	mIsRetryTweaks = LR2HackBox::Get().mConfig->ReadValue("bRetryTweaks") == "true" ? true : false;
 	mIsRandomSelect = LR2HackBox::Get().mConfig->ReadValue("bRandomSelect") == "true" ? true : false;
 	mIsMainBPM = LR2HackBox::Get().mConfig->ReadValue("bMainBPM") == "true" ? true : false;
+	mIsRerouteScreenshots = LR2HackBox::Get().mConfig->ReadValue("bRerouteScreenshots") == "true" ? true : false;
 
 	mMidHooks.push_back(safetyhook::create_mid((void*)(moduleBase + 0x9573), OnSetRetryFlag));
 	mMidHooks.push_back(safetyhook::create_mid((void*)(moduleBase + 0x0198C1), OnPlayISetSelecter));
@@ -394,6 +421,18 @@ bool Misc::Init(uintptr_t moduleBase) {
 	mMidHooks.push_back(safetyhook::create_mid((void*)(moduleBase + 0x0B4366), OnCalcAvgSpeedmult));
 
 	mMidHooks.push_back(safetyhook::create_mid((void*)(moduleBase + 0x6D86), OnDrawNotesGetSongtimer));
+
+	if (MH_CreateHookEx((LPVOID)SaveDrawScreenToPNG, &OnSaveDrawScreenToPNG, &SaveDrawScreenToPNG) != MH_OK)
+	{
+		std::cout << "Couldn't hook SaveDrawScreenToPNG" << std::endl;
+		return false;
+	}
+
+	if (MH_QueueEnableHook(MH_ALL_HOOKS) || MH_ApplyQueued() != MH_OK)
+	{
+		std::cout << ("Couldn't enable misc hooks") << std::endl;
+		return false;
+	}
 
 	return true;
 }
@@ -439,6 +478,13 @@ void Misc::Menu() {
 	}
 	ImGui::SameLine();
 	HelpMarker("Replaces the effect of AverageBPM hi-speed mode to that of MainBPM");
+
+	if (ImGui::Checkbox("Reroute Screenshots", &mIsRerouteScreenshots)) {
+		LR2HackBox::Get().mConfig->WriteValue("bRerouteScreenshots", mIsRerouteScreenshots ? "true" : "false");
+		LR2HackBox::Get().mConfig->SaveConfig();
+	}
+	ImGui::SameLine();
+	HelpMarker("Reroutes screenshots to save in 'screenshots' folder");
 
 	/*if (ImGui::Button("Start Random Song")) {
 		StartRandomFromFolder();

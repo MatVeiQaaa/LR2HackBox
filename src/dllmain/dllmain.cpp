@@ -47,8 +47,8 @@ BOOL APIENTRY DllMain(
 
         std::cout << "Debug Console Attached" << std::endl;
 
-        /*while (!IsDebuggerPresent())
-            Sleep(100);*/
+        while (!IsDebuggerPresent())
+            Sleep(100);
 #endif
         std::thread(Init).detach();
 

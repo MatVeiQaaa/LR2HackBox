@@ -20,10 +20,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Features\Funny.cpp" />
+    <ClCompile Include="Features\MemoryTracker.cpp" />
     <ClCompile Include="Features\Misc.cpp" />
     <ClCompile Include="Features\Unrandomizer.cpp" />
     <ClCompile Include="LR2HackBox.cpp" />
     <ClInclude Include="Features\Funny.hpp" />
+    <ClInclude Include="Features\MemoryTracker.hpp" />
     <ClInclude Include="Features\Misc.hpp" />
     <ClInclude Include="Features\Unrandomizer.hpp" />
     <ClInclude Include="Features\Unrandomizer_SeedMap.hpp" />

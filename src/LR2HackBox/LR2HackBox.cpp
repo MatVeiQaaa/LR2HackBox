@@ -3,6 +3,7 @@
 #include "Helpers/Helpers.hpp"
 #include "ImGuiInjector/ImGuiInjector.hpp"
 #include "imgui/imgui.h"
+#include "minhook/include/MinHook.h"
 
 #include <iostream>
 #include <string>
@@ -11,9 +12,19 @@
 #include "Features/Funny.hpp"
 #include "Features/Misc.hpp"
 
+#ifndef NDEBUG
+#include "Features/MemoryTracker.hpp")
+#endif
+
 #pragma comment(lib, "Helpers.lib")
 #pragma comment(lib, "ImGuiInjector.lib")
 #pragma comment(lib, "BaseModels.lib")
+
+#if defined _M_X64
+#pragma comment(lib, "libMinHook.x64.lib")
+#elif defined _M_IX86
+#pragma comment(lib, "libMinHook.x86.lib")
+#endif
 
 LR2HackBox& LR2HackBox::Get() {
 	static LR2HackBox instance;
@@ -22,6 +33,11 @@ LR2HackBox& LR2HackBox::Get() {
 
 bool LR2HackBox::Hook() {
 	mLogger.SetPath("./LR2HackBox.log");
+
+	MH_Initialize();
+
+	IFDEBUG(mMemoryTracker = new MemoryTracker());
+	IFDEBUG(mMemoryTracker->Init(mModuleBase));
 
 	LR2::Init();
 	while (!LR2::isInit) Sleep(1);
@@ -47,10 +63,12 @@ bool LR2HackBox::Unhook() {
 	mUnrandomizer->Deinit();
 	mFunny->Deinit();
 	mMisc->Deinit();
+	IFDEBUG(mMemoryTracker->Deinit());
 	delete(mConfig);
 	delete(mUnrandomizer);
 	delete(mFunny);
 	delete(mMisc);
+	IFDEBUG(delete(mMemoryTracker));
 	return true;
 }
 
@@ -63,7 +81,7 @@ void LR2HackBoxMenu::Loop() {
 	ImGui::Begin("LR2HackBox", &(LR2HackBoxMenu::mIsOpen));
 
 	ImGui::Text("LR2HackBox Menu");
-	
+
 	if (ImGui::CollapsingHeader("Unrandomizer")) {
 		((Unrandomizer*)LR2HackBox::Get().mUnrandomizer)->Menu();
 	}
@@ -75,6 +93,12 @@ void LR2HackBoxMenu::Loop() {
 	if (ImGui::CollapsingHeader("Funny")) {
 		((Funny*)LR2HackBox::Get().mFunny)->Menu();
 	}
+
+	IFDEBUG(
+		if (ImGui::CollapsingHeader("MemoryTracker")) {
+			((MemoryTracker*)LR2HackBox::Get().mMemoryTracker)->Menu();
+		}
+	)
 
 	ImGui::End();
 }
