@@ -83,10 +83,10 @@ HRESULT __stdcall OnGetDeviceState(IDirectInputDevice7* pThis, DWORD cbData, LPV
             ((LPDIMOUSESTATE2)lpvData)->rgbButtons[0] = 0;
             ((LPDIMOUSESTATE2)lpvData)->rgbButtons[1] = 0;
         }
-        else if (ImGuiInjector::Get().WantsKeyboardInput() && cbData == 256) { // Keyboard device
+        if (ImGuiInjector::Get().WantsKeyboardInput() && cbData == 256) { // Keyboard device
             memset(lpvData, 0, 256);
         }
-        //else if (cbData == sizeof(DIJOYSTATE)) { // Controller device
+        //if (cbData == sizeof(DIJOYSTATE)) { // Controller device
         //    memset(lpvData, 0, cbData);
         //}
     }

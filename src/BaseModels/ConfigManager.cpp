@@ -17,6 +17,10 @@ std::string ConfigManager::ReadValue(std::string name) {
 	return config[name];
 }
 
+bool ConfigManager::ValueExists(std::string name) {
+	return config.contains(name);
+}
+
 void ConfigManager::SaveConfig() {
 	std::ofstream file(path);
 	for (auto& [name, value] : config) {

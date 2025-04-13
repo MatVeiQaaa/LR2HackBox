@@ -5,6 +5,9 @@
 
 #include "LR2Mem/LR2Bindings.hpp"
 
+#include <unordered_map>
+#include <string>
+
 #ifndef NDEBUG
 #define IFDEBUG(x) x
 #else
@@ -15,7 +18,15 @@ class LR2HackBoxMenu : public ImGuiMenu {
 public:
 	void Loop();
 	void MessageHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+	void InitBindings();
 private:
+	void BindingsMenu();
+
+	bool mIsRebindMenu = false;
+
+	std::unordered_map<std::string, int> mMenuBindings;
+	std::pair<std::string, bool> mMenuBindingAwaitsRebind{ "NONE", false };
 };
 
 class LR2HackBox : public ModBody {

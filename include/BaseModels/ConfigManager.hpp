@@ -9,6 +9,7 @@ public:
 	ConfigManager(std::string path, bool load = true);
 	void WriteValue(std::string name, std::string value);
 	std::string ReadValue(std::string name);
+	bool ValueExists(std::string name);
 
 	void SaveConfig();
 	void LoadConfig();
