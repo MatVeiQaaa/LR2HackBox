@@ -5,7 +5,7 @@ A collection of various QoL (Quality of Life) features and whatever else i may c
 
 The .dll file must be injected into the game process in any convenient way. I recommend using https://github.com/SayakaIsBaka/lr2_chainload for automatic injection on game launch.
 
-ImGui menu from which you can control all of the features can be brought up with 'INSERT' key in-game.
+ImGui menu from which you can control all of the features can be brought up with 'INSERT' key in-game. It can be later rebound to a different key from the menu behind "Binds" button in the bottom-right corner.
 
 Features:
 - Unrandomizer – Allows you to control which arrange 'RANDOM' function will result in. Currently works only for 7K SP mode. Also has a history of each random arrange you got, regardless of using unrandomizer or not.
