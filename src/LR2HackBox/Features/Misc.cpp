@@ -6,13 +6,17 @@
 #include <unordered_map>
 #include <algorithm>
 #include <filesystem>
+#include <Gdiplus.h>
 #include "LR2HackBox/LR2HackBox.hpp"
 
+#include "ImGuiInjector/ImGuiInjector.hpp"
 #include "safetyhook/safetyhook.hpp"
 #include "minhook/include/MinHook.h"
 #include "imgui/imgui.h"
 
 #pragma comment(lib, "libSafetyhook.lib")
+
+#pragma comment(lib, "Gdiplus.lib")
 
 #if defined _M_X64
 #pragma comment(lib, "libMinHook.x64.lib")
@@ -384,16 +388,60 @@ void Misc::OnDrawNotesGetSongtimer(SafetyHookContext& regs) {
 	}
 }
 
+static std::wstring s2ws(const std::string& str)
+{
+	int size_needed = MultiByteToWideChar(CP_OEMCP, 0, &str[0], (int)str.size(), NULL, 0);
+	std::wstring wstrTo(size_needed, 0);
+	MultiByteToWideChar(CP_OEMCP, 0, &str[0], (int)str.size(), &wstrTo[0], size_needed);
+	return wstrTo;
+}
+
 typedef int(__cdecl* tSaveDrawScreenToPNG)(int x1, int y1, int x2, int y2, const char* FileName, int CompressionLevel);
 tSaveDrawScreenToPNG SaveDrawScreenToPNG = (tSaveDrawScreenToPNG)0x510060;
 int Misc::OnSaveDrawScreenToPNG(int x1, int y1, int x2, int y2, const char* FileName, int CompressionLevel) {
 	Misc& misc = *(Misc*)(LR2HackBox::Get().mMisc);
-	if (!misc.mIsRerouteScreenshots) return SaveDrawScreenToPNG(x1, y1, x2, y2, FileName, CompressionLevel);
 	std::string directory = "screenshots\\";
-	std::string path = directory + FileName;
-	if (!std::filesystem::directory_entry(directory).exists())
+	std::string path = misc.mIsRerouteScreenshots ? directory + FileName : FileName;
+	if (misc.mIsRerouteScreenshots && !std::filesystem::directory_entry(directory).exists())
 		std::filesystem::create_directories(directory);
-	return SaveDrawScreenToPNG(x1, y1, x2, y2, path.c_str(), CompressionLevel);
+	int result = SaveDrawScreenToPNG(x1, y1, x2, y2, path.c_str(), CompressionLevel);
+
+	if (misc.mIsScreenshotsCopybuffer) {
+		ULONG_PTR gdiplusToken = NULL;
+		Gdiplus::GdiplusStartupInput gdiplusStartupInput;
+		if (Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL) != Gdiplus::Ok) return result;
+
+		Gdiplus::Status status;
+		Gdiplus::Bitmap* bitmap = Gdiplus::Bitmap::FromFile(s2ws(path).c_str());
+		if (!bitmap) return result;
+
+		HBITMAP hbitmap;
+		status = bitmap->GetHBITMAP(0, &hbitmap);
+		if (status != Gdiplus::Ok) return result;
+
+		BITMAP bm;
+		GetObject(hbitmap, sizeof bm, &bm);
+		DIBSECTION ds;
+		if (sizeof ds == GetObject(hbitmap, sizeof ds, &ds))
+		{
+			HDC hdc = GetDC(NULL);
+			HBITMAP hbitmap_ddb = CreateDIBitmap(hdc, &ds.dsBmih, CBM_INIT,
+				ds.dsBm.bmBits, (BITMAPINFO*)&ds.dsBmih, DIB_RGB_COLORS);
+			ReleaseDC(NULL, hdc);
+			if (OpenClipboard(ImGuiInjector::Get().GetWindowHandle()))
+			{
+				EmptyClipboard();
+				SetClipboardData(CF_BITMAP, hbitmap_ddb);
+				CloseClipboard();
+			}
+			DeleteObject(hbitmap_ddb);
+		}
+		DeleteObject(hbitmap);
+
+		Gdiplus::GdiplusShutdown(gdiplusToken);
+	}
+
+	return result;
 }
 
 void Misc::SetMetronome(bool value) {
@@ -407,6 +455,7 @@ bool Misc::Init(uintptr_t moduleBase) {
 	mIsRandomSelect = LR2HackBox::Get().mConfig->ReadValue("bRandomSelect") == "true" ? true : false;
 	mIsMainBPM = LR2HackBox::Get().mConfig->ReadValue("bMainBPM") == "true" ? true : false;
 	mIsRerouteScreenshots = LR2HackBox::Get().mConfig->ReadValue("bRerouteScreenshots") == "true" ? true : false;
+	mIsScreenshotsCopybuffer = LR2HackBox::Get().mConfig->ReadValue("bScreenshotsCopybuffer") == "true" ? true : false;
 
 	mMidHooks.push_back(safetyhook::create_mid((void*)(moduleBase + 0x9573), OnSetRetryFlag));
 	mMidHooks.push_back(safetyhook::create_mid((void*)(moduleBase + 0x0198C1), OnPlayISetSelecter));
@@ -485,6 +534,13 @@ void Misc::Menu() {
 	}
 	ImGui::SameLine();
 	HelpMarker("Reroutes screenshots to save in 'screenshots' folder");
+
+	if (ImGui::Checkbox("Screenshots to Copybuffer", &mIsScreenshotsCopybuffer)) {
+		LR2HackBox::Get().mConfig->WriteValue("bScreenshotsCopybuffer", mIsScreenshotsCopybuffer ? "true" : "false");
+		LR2HackBox::Get().mConfig->SaveConfig();
+	}
+	ImGui::SameLine();
+	HelpMarker("Puts the screenshots in the copybuffer, to later access them with CTRL+V");
 
 	/*if (ImGui::Button("Start Random Song")) {
 		StartRandomFromFolder();

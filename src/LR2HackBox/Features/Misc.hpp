@@ -51,4 +51,5 @@ private:
 	bool mIsMainBPM = false;
 	bool mIsMetronome = false;
 	bool mIsRerouteScreenshots = false;
+	bool mIsScreenshotsCopybuffer = false;
 };
