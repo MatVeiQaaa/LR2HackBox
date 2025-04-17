@@ -20,10 +20,26 @@
 
 void Unrandomizer::OnSetRandomSeed(SafetyHookContext& regs) {
 	Unrandomizer& unrandomizer = *(Unrandomizer*)(LR2HackBox::Get().mUnrandomizer);
-	if (!unrandomizer.GetEnabled()) return;
 	LR2::game& game = *LR2HackBox::Get().GetGame();
 
 	uintptr_t* randomseed = &regs.eax;
+	if (!unrandomizer.GetEnabled()) {
+		if (unrandomizer.mIsRRandom) {
+			typedef int(__cdecl* tGetRand)(int RandMax);
+			tGetRand GetRand = (tGetRand)0x6C95E0;
+
+			std::array<char, 7> laneOrder;
+			bool isMirror = GetRand(1);
+			laneOrder = !isMirror ? std::array<char, 7>{ '1', '2', '3', '4', '5', '6', '7' } : std::array<char, 7>{ '7', '6', '5', '4', '3', '2', '1' };
+
+			int rotateBy = GetRand(5) + 1;
+			std::rotate(laneOrder.rbegin(), laneOrder.rbegin() + rotateBy, laneOrder.rend());
+			uintptr_t unrandomseed = GetSeedMap(std::atoi(std::string_view(laneOrder).data()));
+			if (unrandomseed == 0xFFFF) return;
+			*randomseed = unrandomseed;
+		}
+		return;
+	}
 
 	std::stringstream laneOrder;
 	for (int i = 0; i < std::size(unrandomizer.mLaneOrderL); i++) {
@@ -54,7 +70,7 @@ void Unrandomizer::OnSetRandomSeed(SafetyHookContext& regs) {
 	}
 	uintptr_t unrandomseed = GetSeedMap(std::atoi(laneOrder.str().c_str()));
 	if (unrandomseed == 0xFFFF) return;
-	*randomseed = GetSeedMap(std::atoi(laneOrder.str().c_str()));
+	*randomseed = unrandomseed;
 }
 
 static std::wstring s2ws(const std::string& str)
@@ -295,13 +311,22 @@ void Unrandomizer::Menu() {
 		ImGui::Text("This arrange is missing from the seed map...");
 		mIsEnabled = false;
 	}
-	else ImGui::Checkbox("Trainer Enabled", &mIsEnabled);
+	else if (ImGui::Checkbox("Trainer Enabled", &mIsEnabled)) {
+		mIsRRandom = false;
+	}
 	ImGui::SameLine();
 	HelpMarker("When enabled the RANDOM play option will produce the selected random until disabled.\n\nThe selected random can be changed and the trainer toggled on or off between quick retries without needing to return to song select");
 	ImGui::Checkbox("Track Current Random", &mIsTrackRandom);
 	ImGui::SameLine();
-	HelpMarker("While the trainer is disabled this option will update the key display to reflect the current random");
+	HelpMarker("While enabled, this option will update the key display to reflect the current random");
 	ImGui::Checkbox("Black/White Random Select", &mIsBWPermute);
+	ImGui::SameLine();
+	HelpMarker("Lets you specify if the column will end up with a random 'blue' or 'white' key, rather than specific number");
+	if (ImGui::Checkbox("R-Random", &mIsRRandom)) {
+		mIsEnabled = false;
+	}
+	ImGui::SameLine();
+	HelpMarker("R-Random cyclically shifts the columns by a random amount, as well as has a chance to mirror them\n\nOnly this or random trainer can be enabled at a time");
 	ImGui::Unindent();
 }
 
