@@ -449,6 +449,49 @@ void Misc::SetMetronome(bool value) {
 	mIsMetronome = value;
 }
 
+void Misc::MirrorGearshift(bool mirror) {
+	const unsigned char* p1_buttonInputOffsets = (unsigned char*)0x1FD8C;
+
+	uintptr_t* gearshiftDownButton1 = (uintptr_t*)0x4277AE;
+	uintptr_t* gearshiftDownButton2 = (uintptr_t*)0x4277B7;
+	uintptr_t* gearshiftDownButton3 = (uintptr_t*)0x4277C0;
+
+	uintptr_t* gearshiftUpButton1 = (uintptr_t*)0x4277E5;
+	uintptr_t* gearshiftUpButton2 = (uintptr_t*)0x4277EE;
+
+	uintptr_t* lanecoverUpButton = (uintptr_t*)0x4278BC;
+	uintptr_t* lanecoverDownButton = (uintptr_t*)0x4278DB;
+
+	DWORD oldProtection = 0;
+	BOOL hResult = VirtualProtect(gearshiftDownButton1, (uintptr_t)lanecoverDownButton - (uintptr_t)gearshiftDownButton1 + 4, PAGE_EXECUTE_READWRITE, &oldProtection);
+
+	if (mirror) {
+		*gearshiftDownButton1 = (uintptr_t)&p1_buttonInputOffsets[3];
+		*gearshiftDownButton2 = (uintptr_t)&p1_buttonInputOffsets[5];
+		*gearshiftDownButton3 = (uintptr_t)&p1_buttonInputOffsets[7];
+
+		*gearshiftUpButton1 = (uintptr_t)&p1_buttonInputOffsets[4];
+		*gearshiftUpButton2 = (uintptr_t)&p1_buttonInputOffsets[6];
+
+		*lanecoverUpButton = (uintptr_t)&p1_buttonInputOffsets[2];
+		*lanecoverDownButton = (uintptr_t)&p1_buttonInputOffsets[1];
+	}
+	else {
+		*gearshiftDownButton1 = (uintptr_t)&p1_buttonInputOffsets[1];
+		*gearshiftDownButton2 = (uintptr_t)&p1_buttonInputOffsets[3];
+		*gearshiftDownButton3 = (uintptr_t)&p1_buttonInputOffsets[5];
+
+		*gearshiftUpButton1 = (uintptr_t)&p1_buttonInputOffsets[2];
+		*gearshiftUpButton2 = (uintptr_t)&p1_buttonInputOffsets[4];
+
+		*lanecoverUpButton = (uintptr_t)&p1_buttonInputOffsets[6];
+		*lanecoverDownButton = (uintptr_t)&p1_buttonInputOffsets[7];
+	}
+
+	DWORD discard = 0;
+	hResult = VirtualProtect(gearshiftDownButton1, (uintptr_t)lanecoverDownButton - (uintptr_t)gearshiftDownButton1 + 4, oldProtection, &discard);
+}
+
 bool Misc::Init(uintptr_t moduleBase) {
 	Misc::mModuleBase = moduleBase;
 
@@ -457,6 +500,8 @@ bool Misc::Init(uintptr_t moduleBase) {
 	mIsMainBPM = LR2HackBox::Get().mConfig->ReadValue("bMainBPM") == "true" ? true : false;
 	mIsRerouteScreenshots = LR2HackBox::Get().mConfig->ReadValue("bRerouteScreenshots") == "true" ? true : false;
 	mIsScreenshotsCopybuffer = LR2HackBox::Get().mConfig->ReadValue("bScreenshotsCopybuffer") == "true" ? true : false;
+	mIsMirrorGearshift = LR2HackBox::Get().mConfig->ReadValue("bMirrorGearshift") == "true" ? true : false;
+	MirrorGearshift(mIsMirrorGearshift);
 
 	mMidHooks.push_back(safetyhook::create_mid((void*)(moduleBase + 0x9573), OnSetRetryFlag));
 	mMidHooks.push_back(safetyhook::create_mid((void*)(moduleBase + 0x0198C1), OnPlayISetSelecter));
@@ -542,6 +587,15 @@ void Misc::Menu() {
 	}
 	ImGui::SameLine();
 	HelpMarker("Puts the screenshots in the copybuffer, to later access them with CTRL+V");
+
+	if (ImGui::Checkbox("Mirror Lanecover Buttons", &mIsMirrorGearshift)) {
+		LR2HackBox::Get().mConfig->WriteValue("bMirrorGearshift", mIsMirrorGearshift ? "true" : "false");
+		LR2HackBox::Get().mConfig->SaveConfig();
+
+		MirrorGearshift(mIsMirrorGearshift);
+	}
+	ImGui::SameLine();
+	HelpMarker("Mirrors controls for hi-speed and lanecover values, making lanecover on 1 and 2 instead of 6 and 7");
 
 	/*if (ImGui::Button("Start Random Song")) {
 		StartRandomFromFolder();

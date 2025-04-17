@@ -44,6 +44,8 @@ private:
 
 	void StartRandomFromFolder();
 
+	void MirrorGearshift(bool mirror);
+
 	std::vector<SafetyHookMid> mMidHooks;
 
 	bool mIsRetryTweaks = false;
@@ -52,4 +54,5 @@ private:
 	bool mIsMetronome = false;
 	bool mIsRerouteScreenshots = false;
 	bool mIsScreenshotsCopybuffer = false;
+	bool mIsMirrorGearshift = false;
 };
