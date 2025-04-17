@@ -102,24 +102,26 @@ void LR2HackBoxMenu::Loop() {
 		}
 	)
 
-	ImVec2 oldCursorPos = ImGui::GetCursorPos();
-	ImGui::SetCursorPos(ImVec2(-10000.f, -10000.f));
-	ImGui::Button("Binds");
-	ImGui::SetCursorPos(oldCursorPos);
-	ImVec2 size = ImGui::GetItemRectSize();
-	float cursorOffset = ImGui::GetCursorPosY() - ImGui::GetWindowHeight();
-	ImVec2 pos;
-	if (cursorOffset > 0) {
-		pos = { ImGui::GetWindowWidth() - 5.f , ImGui::GetWindowHeight() + cursorOffset + size[1] + 12.f };
+	{
+		ImVec2 oldCursorPos = ImGui::GetCursorPos();
+		ImGui::SetCursorPos(ImVec2(-10000.f, -10000.f));
+		ImGui::Button("Binds");
+		ImGui::SetCursorPos(oldCursorPos);
+		ImVec2 size = ImGui::GetItemRectSize();
+		float cursorOffset = ImGui::GetCursorPosY() - ImGui::GetWindowHeight();
+		ImVec2 pos;
+		if (cursorOffset > 0) {
+			pos = { ImGui::GetWindowWidth() - 5.f , ImGui::GetWindowHeight() + cursorOffset + size[1] + 12.f };
+		}
+		else {
+			pos = { ImGui::GetWindowWidth(), ImGui::GetWindowHeight() };
+		}
+		ImGui::SetCursorPos(ImVec2(pos[0] - size[0] - 10.f, pos[1] - size[1] - 10.f));
+		if (ImGui::Button("Binds")) {
+			mIsRebindMenu = true;
+		}
+		BindingsMenu();
 	}
-	else {
-		pos = { ImGui::GetWindowWidth(), ImGui::GetWindowHeight() };
-	}
-	ImGui::SetCursorPos(ImVec2(pos[0] - size[0] - 10.f, pos[1] - size[1] - 10.f));
-	if (ImGui::Button("Binds")) {
-		mIsRebindMenu = true;
-	}
-	BindingsMenu();
 
 	ImGui::End();
 }

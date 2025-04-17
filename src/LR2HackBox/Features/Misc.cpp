@@ -76,6 +76,7 @@ void Misc::OnPlayISetSelecter(SafetyHookContext& regs) {
 	if (!misc.mIsRetryTweaks) return;
 
 	if (game.gameplay.replay.status > 1) return;
+	if (game.gameplay.courseType != -1) return;
 	if (game.gameplay.player[0].totalnotes <= game.gameplay.player[0].note_current) return;
 	if (game.KeyInput.p1_buttonInput[2] || game.KeyInput.p2_buttonInput[2]) {
 		game.procPhase = 0;
