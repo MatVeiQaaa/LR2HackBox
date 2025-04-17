@@ -110,7 +110,8 @@ void LR2HackBoxMenu::Loop() {
 		ImVec2 size = ImGui::GetItemRectSize();
 		float cursorOffset = ImGui::GetCursorPosY() - ImGui::GetWindowHeight();
 		ImVec2 pos;
-		if (cursorOffset > 0) {
+		// All that math can be optimized... but alas.
+		if (cursorOffset > 0 - size[1] - 12) {
 			pos = { ImGui::GetWindowWidth() - 5.f , ImGui::GetWindowHeight() + cursorOffset + size[1] + 12.f };
 		}
 		else {
