@@ -78,7 +78,7 @@ void Misc::OnPlayISetSelecter(SafetyHookContext& regs) {
 	if (game.gameplay.replay.status > 1) return;
 	if (game.gameplay.courseType != -1) return;
 	if (game.gameplay.player[0].totalnotes <= game.gameplay.player[0].note_current) return;
-	if (game.KeyInput.p1_buttonInput[2] || game.KeyInput.p2_buttonInput[2]) {
+	if (game.KeyInput.p1_buttonInput[12] == 1 || game.KeyInput.p2_buttonInput[12] == 1) {
 		game.procPhase = 0;
 		game.procSelecter = 4;
 		game.gameplay.flag_retry = 0;
@@ -95,7 +95,7 @@ void Misc::OnPlayISetSelecter(SafetyHookContext& regs) {
 
 		StopKeysounds();
 	}
-	else if (game.KeyInput.p1_buttonInput[4] || game.KeyInput.p2_buttonInput[4]) {
+	else if (game.KeyInput.p1_buttonInput[13] == 1 || game.KeyInput.p2_buttonInput[13] == 1) {
 		game.procPhase = 0;
 		game.procSelecter = 4;
 		game.gameplay.flag_retry = 1;
@@ -557,7 +557,7 @@ void Misc::Menu() {
 		LR2HackBox::Get().mConfig->SaveConfig();
 	}
 	ImGui::SameLine();
-	HelpMarker("When enabled:\n  Play: 2 on fade-out to restart with a new random,\n  4 to restart with the same random. \n\n  Result: <any white key>+2 on fade-out\n  to restart with a new random.");
+	HelpMarker("When enabled:\n  Play: 'START' on fade-out to restart with a new random,\n  'SELECT' to restart with the same random. \n\n  Result: <any white key>+2 on fade-out\n  to restart with a new random.");
 
 
 	if (ImGui::Checkbox("Random Select", &mIsRandomSelect)) {
