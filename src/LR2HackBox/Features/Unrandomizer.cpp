@@ -31,8 +31,9 @@ void Unrandomizer::OnSetRandomSeed(SafetyHookContext& regs) {
 			std::array<char, 7> laneOrder;
 			bool isMirror = GetRand(1);
 			laneOrder = !isMirror ? std::array<char, 7>{ '1', '2', '3', '4', '5', '6', '7' } : std::array<char, 7>{ '7', '6', '5', '4', '3', '2', '1' };
-
-			int rotateBy = GetRand(5) + 1;
+			
+			int rotateBy = 0;
+			while (rotateBy == 0) rotateBy = GetRand(6);
 			std::rotate(laneOrder.rbegin(), laneOrder.rbegin() + rotateBy, laneOrder.rend());
 			uintptr_t unrandomseed = GetSeedMap(std::atoi(std::string_view(laneOrder).data()));
 			if (unrandomseed == 0xFFFF) return;
