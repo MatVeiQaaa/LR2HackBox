@@ -105,7 +105,7 @@ void LR2HackBoxMenu::Loop() {
 	{
 		ImVec2 oldCursorPos = ImGui::GetCursorPos();
 		ImGui::SetCursorPos(ImVec2(-10000.f, -10000.f));
-		ImGui::Button("Binds");
+		ImGui::Button("Binds##offscreen");
 		ImGui::SetCursorPos(oldCursorPos);
 		ImVec2 size = ImGui::GetItemRectSize();
 		float cursorOffset = ImGui::GetCursorPosY() - ImGui::GetWindowHeight();
