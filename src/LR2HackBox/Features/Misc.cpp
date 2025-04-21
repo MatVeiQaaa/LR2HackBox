@@ -607,7 +607,7 @@ void Misc::Menu() {
 		LR2HackBox::Get().mConfig->SaveConfig();
 	}
 	ImGui::SameLine();
-	HelpMarker("Adds 'RANDOM SELECT' entry to song folder, which starts a random song from it");
+	HelpMarker("Adds an assortment of 'RANDOM SELECT' entries to song folder, which starts a random song matching the filter from it.\n\nFilters are 'UNPLAYED', 'FAILED', '<HC', '<AAA'.");
 
 	if (ImGui::Checkbox("MainBPM hi-speed mode", &mIsMainBPM)) {
 		LR2HackBox::Get().mConfig->WriteValue("bMainBPM", mIsMainBPM ? "true" : "false");

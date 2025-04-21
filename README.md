@@ -11,7 +11,7 @@ Features:
 - Unrandomizer – Allows you to control which arrange 'RANDOM' function will result in. Currently works only for 7K SP mode. Also has a history of each random arrange you got, regardless of using unrandomizer or not.
 - R-Random – 'RANDOM' function acts as R-Random, where columns "rotate", or cyclically shift, by some offset, as well as have a chance to mirror.
 - Restart Tweaks – Adds ability to restart from play scene with new or same random arrange (if random is used), as well as from result screen.
-- Random Select – Adds 'RANDOM SELECT' entry as the last element of song select list, when a song folder is opened. Upon selection of that entry, a song from that folder will be started at random.
+- Random Select – Adds an assortment of 'RANDOM SELECT' entries as last elements of song select list, when a song folder is opened. Upon selection of such entry, a song matching the filter will be started at random from that folder. Filters are 'UNPLAYED', 'FAILED', '<HC' and '<AAA'.
 - MainBPM hi-speed mode – Replaces AvgBPM hi-speed fix mode with MainBPM, which selects the BPM which most notes in the chart use to calculate the speed against.
 - Reroute Screenshots – Reroutes screenshots to save into a separate folder 'screenshots' instead of the root game folder.
 - Screenshots into copybuffer – Puts the screenshots in the copybuffer, to later access them with CTRL+V.
