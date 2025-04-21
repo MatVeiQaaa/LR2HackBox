@@ -10,8 +10,15 @@
 
 #ifndef NDEBUG
 #define IFDEBUG(x) x
+//#define MEMORYTRACKER
 #else
 #define IFDEBUG(x)
+#endif
+
+#ifdef MEMORYTRACKER
+#define IFMEMORYTRACKER(x) x
+#else
+#define IFMEMORYTRACKER(x)
 #endif
 
 class LR2HackBoxMenu : public ImGuiMenu {
@@ -37,13 +44,14 @@ public:
 	bool Unhook();
 
 	LR2::game* GetGame();
+	void* GetSqlite();
 
 	LR2HackBoxMenu mMenu;
 
 	ModFeature* mUnrandomizer = nullptr;
 	ModFeature* mFunny = nullptr;
 	ModFeature* mMisc = nullptr;
-	IFDEBUG(ModFeature* mMemoryTracker = nullptr);
+	IFMEMORYTRACKER(ModFeature* mMemoryTracker = nullptr);
 
 	ConfigManager* mConfig = nullptr;
 private:

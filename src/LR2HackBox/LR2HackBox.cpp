@@ -36,8 +36,8 @@ bool LR2HackBox::Hook() {
 
 	MH_Initialize();
 
-	IFDEBUG(mMemoryTracker = new MemoryTracker());
-	IFDEBUG(mMemoryTracker->Init(mModuleBase));
+	IFMEMORYTRACKER(mMemoryTracker = new MemoryTracker());
+	IFMEMORYTRACKER(mMemoryTracker->Init(mModuleBase));
 
 	LR2::Init();
 	while (!LR2::isInit) Sleep(1);
@@ -65,18 +65,23 @@ bool LR2HackBox::Unhook() {
 	mUnrandomizer->Deinit();
 	mFunny->Deinit();
 	mMisc->Deinit();
-	IFDEBUG(mMemoryTracker->Deinit());
+	IFMEMORYTRACKER(mMemoryTracker->Deinit());
 	delete(mConfig);
 	delete(mUnrandomizer);
 	delete(mFunny);
 	delete(mMisc);
-	IFDEBUG(delete(mMemoryTracker));
+	IFMEMORYTRACKER(delete(mMemoryTracker));
 	return true;
 }
 
 LR2::game* LR2HackBox::GetGame() {
 	if (!LR2::isInit) return nullptr;
 	return (LR2::game*)LR2::pGame;
+}
+
+void* LR2HackBox::GetSqlite() {
+	if (!LR2::isInit) return nullptr;
+	return LR2::pSqlite;
 }
 
 void LR2HackBoxMenu::Loop() {
@@ -96,7 +101,7 @@ void LR2HackBoxMenu::Loop() {
 		((Funny*)LR2HackBox::Get().mFunny)->Menu();
 	}
 
-	IFDEBUG(
+	IFMEMORYTRACKER(
 		if (ImGui::CollapsingHeader("MemoryTracker")) {
 			((MemoryTracker*)LR2HackBox::Get().mMemoryTracker)->Menu();
 		}

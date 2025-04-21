@@ -137,15 +137,7 @@ void Misc::OnRandomMixInput(SafetyHookContext& regs) {
 
 	Misc& misc = *(Misc*)(LR2HackBox::Get().mMisc);
 	if (!misc.mIsRandomSelect) return;
-	
-	typedef int(__cdecl* tGetRand)(int RandMax);
-	tGetRand GetRand = (tGetRand)0x6C95E0;
-	
-	misc.mRandSelRealIdx = game.sSelect.cur_song;
-	while (game.sSelect.bmsListCount > 1) {
-		misc.mRandSelRandIdx = GetRand(game.sSelect.bmsListCount - 1);
-		if (game.sSelect.bmsList[misc.mRandSelRandIdx].keymode >= 5) break;
-	}
+
 	misc.mRandSelCustomEntry = true;
 
 	game.procSelecter = 3;
@@ -196,28 +188,74 @@ static void FillBMSMETA(LR2::BMSMETA& meta, const LR2::SONGDATA& song) {
 	meta.keymode = song.keymode;
 }
 
+void Misc::OnDecideInit() {
+	LR2::game& game = *LR2HackBox::Get().GetGame();
+	void* sqlite = LR2HackBox::Get().GetSqlite();
+
+	if (!mIsRandomSelect) return;
+	if (!mRandSelCustomEntry) return;
+
+	LR2::CSTR querry(0);
+	std::string querryStr = std::format("{} {} ORDER BY random() LIMIT 1", game.sSelect.stack_query[game.sSelect.cur].body, game.sSelect.bmsList[game.sSelect.cur_song].tag.body);
+
+	querry.assign(querryStr.c_str());
+
+	typedef int(__cdecl* tSQL_Prepare)(LR2::CSTR queryStr, void* sql, void** ppStmt);
+	tSQL_Prepare SQL_Prepare = (tSQL_Prepare)0x4443f0;
+
+	typedef LR2::CSTR(__cdecl* tSQL_GetColumn)(int i, void* pStmt);
+	tSQL_GetColumn SQL_GetColumn = (tSQL_GetColumn)0x4444F0;
+
+	typedef int(__cdecl* tsqlite3_step)(void* stmt);
+	tsqlite3_step sqlite3_step = (tsqlite3_step)0x48C480;
+
+	typedef int(__cdecl* tsqlite3_finalize)(void* stmt);
+	tsqlite3_finalize sqlite3_finalize = (tsqlite3_finalize)0x485FD0;
+
+	void* pStmt;
+	LR2::CSTR songhash;
+
+	int prepareRes = SQL_Prepare(querry, sqlite, &pStmt);
+	if (sqlite3_step(pStmt) == 100) {
+		songhash.assign(SQL_GetColumn(0, pStmt).body);
+	}
+	sqlite3_finalize(pStmt);
+
+	for (int i = 0; i < game.sSelect.bmsListCount; i++) {
+		if (std::string_view(songhash.body) == game.sSelect.bmsList[i].hash.body) {
+			game.sSelect.cur_song = i;
+			break;
+		}
+		game.sSelect.cur_song = game.sSelect.bmsListCount - 1;
+	}
+
+	FillBMSMETA(game.sSelect.metaSelected, game.sSelect.bmsList[game.sSelect.cur_song]);
+	UpdateSongdataStrings();
+
+	mRandSelCustomEntry = false;
+}
+
+void Misc::OnPlayInit() {
+	if (!mIsMetronome) return;
+
+	LR2::game& game = *LR2HackBox::Get().GetGame();
+
+	typedef int(__cdecl* tLoadSound)(LR2::AUDIO* aud, LR2::SOUNDDATA* sound, LR2::CSTR filepath, int loop, int disableDSP, int previewFlag);
+	tLoadSound LoadSound = (tLoadSound)0x4B8BB0;
+
+	LoadSound(&game.audio, &metronomeMeasureFx, LR2::CSTR("LR2files\\Sound\\LR2HackBox\\metronome-measure.wav"), 0, game.config.sound.disabledsp, 0);
+	LoadSound(&game.audio, &metronomeBeatFx, LR2::CSTR("LR2files\\Sound\\LR2HackBox\\metronome-beat.wav"), 0, game.config.sound.disabledsp, 0);
+}
+
 void Misc::OnSceneInitSwitch(SafetyHookContext& regs) {
 	Misc& misc = *(Misc*)(LR2HackBox::Get().mMisc);
-	LR2::game& game = *LR2HackBox::Get().GetGame();
 
 	switch (regs.eax) {
 	case 3: // Decide
-		if (!misc.mIsRandomSelect) break;
-		if (!misc.mRandSelCustomEntry) break;
-
-		game.sSelect.cur_song = misc.mRandSelRandIdx;
-		FillBMSMETA(game.sSelect.metaSelected, game.sSelect.bmsList[game.sSelect.cur_song]);
-		UpdateSongdataStrings();
-
-		misc.mRandSelCustomEntry = false;
+		misc.OnDecideInit();
 		break;
 	case 4: // Play
-		if (!misc.mIsMetronome) return;
-		typedef int(__cdecl* tLoadSound)(LR2::AUDIO* aud, LR2::SOUNDDATA* sound, LR2::CSTR filepath, int loop, int disableDSP, int previewFlag);
-		tLoadSound LoadSound = (tLoadSound)0x4B8BB0;
-
-		LoadSound(&game.audio, &metronomeMeasureFx, LR2::CSTR("LR2files\\Sound\\LR2HackBox\\metronome-measure.wav"), 0, game.config.sound.disabledsp, 0);
-		LoadSound(&game.audio, &metronomeBeatFx, LR2::CSTR("LR2files\\Sound\\LR2HackBox\\metronome-beat.wav"), 0, game.config.sound.disabledsp, 0);
+		misc.OnPlayInit();
 		break;
 	}
 }
@@ -247,17 +285,17 @@ void Misc::StartRandomFromFolder() {
 	game.procSelecter = 3;
 }
 
-static void AddRandomSelectBar() {
+static void AddRandomSelectBar(const char* title, const char* tag = "") {
 	LR2::game& game = *LR2HackBox::Get().GetGame();
 	LR2::SONGDATA bar;
 	typedef void(__cdecl* tSongDataInit)(LR2::SONGDATA* song);
 	tSongDataInit SongDataInit = (tSongDataInit)0x444730;
 	SongDataInit(&bar);
 	bar.folderType = 9;
-	bar.title.assign("RANDOM SELECT");
-	bar.fulltitle.assign("RANDOM SELECT");
+	bar.title.assign(title);
+	bar.fulltitle.assign(title);
 	bar.filepath.assign("randomselect");
-	//bar.hash.assign("randomcourse");
+	bar.tag.assign(tag);
 	typedef LR2::SONGDATA*(__thiscall* tSongDataAssign)(LR2::SONGDATA* pThis, LR2::SONGDATA* other);
 	tSongDataAssign SongDataAssign = (tSongDataAssign)0x404FE0;
 	SongDataAssign(&game.sSelect.bmsList[game.sSelect.bmsListCount], &bar);
@@ -270,7 +308,11 @@ void Misc::OnOpenFolderPlaySound(SafetyHookContext& regs) {
 
 	LR2::game& game = *LR2HackBox::Get().GetGame();
 	if (game.sSelect.stack_isFolder[game.sSelect.cur] == 0) {
-		AddRandomSelectBar();
+		AddRandomSelectBar("RANDOM SELECT");
+		AddRandomSelectBar("RANDOM SELECT UNPLAYED", "AND clear IS NULL");
+		AddRandomSelectBar("RANDOM SELECT FAILED", "AND clear = 1");
+		AddRandomSelectBar("RANDOM SELECT <HC", "AND (clear < 4 OR clear IS NULL)");
+		AddRandomSelectBar("RANDOM SELECT <AAA", "AND (CAST((perfect * 2 + great) AS float) / (totalnotes * 2) * 100 < 88.88 OR perfect IS NULL)");
 	}
 }
 

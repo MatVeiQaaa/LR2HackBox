@@ -25,10 +25,9 @@ private:
 	static void OnRandomMixInput(SafetyHookContext& regs);
 	static void OnSceneInitSwitch(SafetyHookContext& regs);
 	static void OnOpenFolderPlaySound(SafetyHookContext& regs);
+	void OnDecideInit();
 
 	bool mRandSelCustomEntry = false;
-	int mRandSelRealIdx = 0;
-	int mRandSelRandIdx = 0;
 
 	static void OnAddToAvgBpmSum(SafetyHookContext& regs);
 	static void OnCalcAvgSpeedmult(SafetyHookContext& regs);
@@ -36,6 +35,7 @@ private:
 	std::unordered_map<double, int> mMainBPMBpmRefcount;
 
 	static void OnDrawNotesGetSongtimer(SafetyHookContext& regs);
+	void OnPlayInit();
 
 	int mMetronomeLastPlayedBeat = 0;
 	int mMetronomePrevMeasureIdx = -1;
