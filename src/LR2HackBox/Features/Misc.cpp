@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <Gdiplus.h>
 #include "LR2HackBox/LR2HackBox.hpp"
+#include "AnalogInput.hpp"
 
 #include "ImGuiInjector/ImGuiInjector.hpp"
 #include "safetyhook/safetyhook.hpp"
@@ -543,6 +544,8 @@ bool Misc::Init(uintptr_t moduleBase) {
 	mIsRerouteScreenshots = LR2HackBox::Get().mConfig->ReadValue("bRerouteScreenshots") == "true" ? true : false;
 	mIsScreenshotsCopybuffer = LR2HackBox::Get().mConfig->ReadValue("bScreenshotsCopybuffer") == "true" ? true : false;
 	mIsMirrorGearshift = LR2HackBox::Get().mConfig->ReadValue("bMirrorGearshift") == "true" ? true : false;
+	mIsAnalogInput = LR2HackBox::Get().mConfig->ReadValue("bAnalogInput") == "true" ? true : false;
+	((AnalogInput*)LR2HackBox::Get().mAnalogInput)->SetEnabled(mIsAnalogInput);
 	MirrorGearshift(mIsMirrorGearshift);
 
 	mMidHooks.push_back(safetyhook::create_mid((void*)(moduleBase + 0x9573), OnSetRetryFlag));
@@ -638,6 +641,19 @@ void Misc::Menu() {
 	}
 	ImGui::SameLine();
 	HelpMarker("Mirrors controls for hi-speed and lanecover values, making lanecover on 1 and 2 instead of 6 and 7");
+
+	if (ImGui::Checkbox("Analog scratch support", &mIsAnalogInput)) {
+		((AnalogInput*)LR2HackBox::Get().mAnalogInput)->SetEnabled(mIsAnalogInput);
+
+		LR2HackBox::Get().mConfig->WriteValue("bAnalogInput", mIsAnalogInput ? "true" : "false");
+		LR2HackBox::Get().mConfig->SaveConfig();
+	}
+	ImGui::SameLine();
+	HelpMarker("Lets you select a device and axis to use for scratch input. While enabled, set axis should be unbound in LR2 input settings");
+
+	if (mIsAnalogInput) {
+		((AnalogInput*)LR2HackBox::Get().mAnalogInput)->Menu();
+	}
 
 	/*if (ImGui::Button("Start Random Song")) {
 		StartRandomFromFolder();

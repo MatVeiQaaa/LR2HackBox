@@ -37,7 +37,7 @@ void ConfigManager::LoadConfig() {
 		name.erase(std::remove_if(name.begin(), name.end(), isspace), name.end());
 
 		std::string value = line.substr(line.find_first_of('=') + 1, line.size() - 1);
-		value.erase(std::remove_if(value.begin(), value.end(), isspace), value.end());
+		if (*value.begin() == ' ') value.erase(value.begin());
 
 		config[name] = value;
 	}

@@ -16,5 +16,6 @@ Features:
 - Reroute Screenshots – Reroutes screenshots to save into a separate folder 'screenshots' instead of the root game folder.
 - Screenshots into copybuffer – Puts the screenshots in the copybuffer, to later access them with CTRL+V.
 - Mirror Lanecover Buttons – Mirrors the binds to adjust lanecover from play scene, making them 2 and 1 instead of 6 and 7, which can be useful for P2 players.
+- Analog Scratch Support – Allows translation of absolute axis scratch into button input for controllers that don't have other modes. When used, scratch should be unbound in LR2 input settings menu.
 - Hide Scratch Notes – Makes scratch notes invisible. For no practical reason. Only works for 7K SP.
 - Metronome – Enables the metronome sound in playing scene. SFX can be customized with 'metronome-beat.wav' and 'metronome-measure' in 'LR2files\Sound\LR2HackBox\' directory for respective sounds. If those files are not present, it will default to using samples for closing and opening (in that order) a folder.

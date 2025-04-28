@@ -51,6 +51,7 @@ public:
 	ModFeature* mUnrandomizer = nullptr;
 	ModFeature* mFunny = nullptr;
 	ModFeature* mMisc = nullptr;
+	ModFeature* mAnalogInput = nullptr;
 	IFMEMORYTRACKER(ModFeature* mMemoryTracker = nullptr);
 
 	ConfigManager* mConfig = nullptr;

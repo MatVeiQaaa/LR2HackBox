@@ -30,6 +30,9 @@
     <ClInclude Include="Features\MemoryTracker.hpp">
       <Filter>Header Files\Features</Filter>
     </ClInclude>
+    <ClInclude Include="Features\AnalogInput.hpp">
+      <Filter>Header Files\Features</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="LR2HackBox.cpp">
@@ -45,6 +48,9 @@
       <Filter>Source Files\Features</Filter>
     </ClCompile>
     <ClCompile Include="Features\MemoryTracker.cpp">
+      <Filter>Source Files\Features</Filter>
+    </ClCompile>
+    <ClCompile Include="Features\AnalogInput.cpp">
       <Filter>Source Files\Features</Filter>
     </ClCompile>
   </ItemGroup>

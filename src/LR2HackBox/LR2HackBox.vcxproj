@@ -19,11 +19,13 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Features\AnalogInput.cpp" />
     <ClCompile Include="Features\Funny.cpp" />
     <ClCompile Include="Features\MemoryTracker.cpp" />
     <ClCompile Include="Features\Misc.cpp" />
     <ClCompile Include="Features\Unrandomizer.cpp" />
     <ClCompile Include="LR2HackBox.cpp" />
+    <ClInclude Include="Features\AnalogInput.hpp" />
     <ClInclude Include="Features\Funny.hpp" />
     <ClInclude Include="Features\MemoryTracker.hpp" />
     <ClInclude Include="Features\Misc.hpp" />

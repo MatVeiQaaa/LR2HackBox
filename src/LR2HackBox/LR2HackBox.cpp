@@ -11,6 +11,7 @@
 #include "Features/Unrandomizer.hpp"
 #include "Features/Funny.hpp"
 #include "Features/Misc.hpp"
+#include "Features/AnalogInput.hpp"
 
 #ifndef NDEBUG
 #include "Features/MemoryTracker.hpp")
@@ -53,10 +54,12 @@ bool LR2HackBox::Hook() {
 	mUnrandomizer = new Unrandomizer();
 	mFunny = new Funny();
 	mMisc = new Misc();
+	mAnalogInput = new AnalogInput();
 
 	mUnrandomizer->Init(mModuleBase);
 	mFunny->Init(mModuleBase);
 	mMisc->Init(mModuleBase);
+	mAnalogInput->Init(mModuleBase);
 
 	return true;
 }
@@ -65,11 +68,13 @@ bool LR2HackBox::Unhook() {
 	mUnrandomizer->Deinit();
 	mFunny->Deinit();
 	mMisc->Deinit();
+	mAnalogInput->Deinit();
 	IFMEMORYTRACKER(mMemoryTracker->Deinit());
 	delete(mConfig);
 	delete(mUnrandomizer);
 	delete(mFunny);
 	delete(mMisc);
+	delete(mAnalogInput);
 	IFMEMORYTRACKER(delete(mMemoryTracker));
 	return true;
 }

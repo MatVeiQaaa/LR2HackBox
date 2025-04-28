@@ -55,4 +55,5 @@ private:
 	bool mIsRerouteScreenshots = false;
 	bool mIsScreenshotsCopybuffer = false;
 	bool mIsMirrorGearshift = false;
+	bool mIsAnalogInput = false;
 };
