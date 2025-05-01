@@ -77,7 +77,7 @@ void Misc::OnPlayISetSelecter(SafetyHookContext& regs) {
 	if (!misc.mIsRetryTweaks) return;
 
 	if (game.gameplay.replay.status > 1) return;
-	if (game.gameplay.courseType != -1) return;
+	//if (game.gameplay.courseType != -1) return;
 	if (game.gameplay.player[0].totalnotes <= game.gameplay.player[0].note_current) return;
 	if (game.KeyInput.p1_buttonInput[12] == 1 || game.KeyInput.p2_buttonInput[12] == 1) {
 		game.procPhase = 0;
@@ -94,6 +94,11 @@ void Misc::OnPlayISetSelecter(SafetyHookContext& regs) {
 		// Reset gauge type for GAS.
 		game.config.play.gaugeOption[0] = misc.mOrigGaugeType;
 
+		if (game.gameplay.courseType != -1 && game.gameplay.courseStageNow != 0) {
+			game.gameplay.courseStageNow = 0;
+			game.gameplay.bmsResourceLoaded = 0;
+		}
+
 		StopKeysounds();
 	}
 	else if (game.KeyInput.p1_buttonInput[13] == 1 || game.KeyInput.p2_buttonInput[13] == 1) {
@@ -109,6 +114,12 @@ void Misc::OnPlayISetSelecter(SafetyHookContext& regs) {
 
 		// Reset gauge type for GAS.
 		game.config.play.gaugeOption[0] = misc.mOrigGaugeType;
+
+		if (game.gameplay.courseType != -1 && game.gameplay.courseStageNow != 0) {
+			game.gameplay.courseStageNow = 0;
+			game.gameplay.bmsResourceLoaded = 0;
+			game.gameplay.flag_retry = 0;
+		}
 
 		StopKeysounds();
 	}
