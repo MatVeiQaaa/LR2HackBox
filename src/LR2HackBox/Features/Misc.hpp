@@ -42,6 +42,12 @@ private:
 
 	static int OnSaveDrawScreenToPNG(int x1, int y1, int x2, int y2, const char* FileName, int CompressionLevel);
 
+	static void OnBeforeAddDrawingBuffer_LN(SafetyHookContext& regs);
+	static int OnAddDrawingBuffer_LN(void* drb, void* srcLs, void* srcLe, void* srcLb, void* dst, void* T, float shiftX, float shiftY, float longY, int alpha, float sizeX, float sizeY);
+	int OnAddDrawingBuffer_LN_Fixed(void* drb, void* srcLs, void* srcLe, void* srcLb, void* dst, void* T, float shiftX, float shiftY, float longY, int alpha, float sizeX, float sizeY, void* lnObj);
+
+	void* mCurrentDrawingLNObj = nullptr;
+
 	void StartRandomFromFolder();
 
 	void MirrorGearshift(bool mirror);
@@ -56,4 +62,5 @@ private:
 	bool mIsScreenshotsCopybuffer = false;
 	bool mIsMirrorGearshift = false;
 	bool mIsAnalogInput = false;
+	bool mIsLNAnimFix = false;
 };

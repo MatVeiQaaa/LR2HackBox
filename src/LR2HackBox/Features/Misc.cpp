@@ -130,6 +130,7 @@ void Misc::OnInit(SafetyHookContext& regs) {
 	mOrigGaugeType = game.config.play.gaugeOption[0];
 	mMetronomeLastPlayedBeat = 0;
 	mMetronomePrevMeasureIdx = -1;
+	mCurrentDrawingLNObj = nullptr;
 }
 
 void Misc::OnInitPlay(SafetyHookContext& regs) {
@@ -546,6 +547,141 @@ void Misc::MirrorGearshift(bool mirror) {
 	hResult = VirtualProtect(gearshiftDownButton1, (uintptr_t)lanecoverDownButton - (uintptr_t)gearshiftDownButton1 + 4, oldProtection, &discard);
 }
 
+void Misc::OnBeforeAddDrawingBuffer_LN(SafetyHookContext& regs) {
+	uintptr_t** offset1 = (uintptr_t**)(regs.esp + 0x68);
+	uintptr_t* offset2 = (uintptr_t*)(regs.esp + 0xA0);
+	Misc& misc = *(Misc*)(LR2HackBox::Get().mMisc);
+	misc.mCurrentDrawingLNObj = (void*)(**offset1 + *offset2);
+}
+
+typedef int (__cdecl* tAddDrawingBuffer_LN)(LR2::DrawingBuf* drb, LR2::SRCstruct* srcLs, LR2::SRCstruct* srcLe, LR2::SRCstruct* srcLb, LR2::DSTstruct* dst, LR2::Timer* T, float shiftX, float shiftY, float longY, int alpha, float sizeX, float sizeY);
+tAddDrawingBuffer_LN AddDrawingBuffer_LN = (tAddDrawingBuffer_LN)0x49D240;
+int Misc::OnAddDrawingBuffer_LN_Fixed(void* drbIn, void* srcLsIn, void* srcLeIn, void* srcLbIn, void* dstIn, void* TIn, float shiftX, float shiftY, float longY, int alpha, float sizeX, float sizeY, void* lnObjIn) {
+	LR2::DrawingBuf* drb = (LR2::DrawingBuf*)drbIn;
+	LR2::SRCstruct* srcLs = (LR2::SRCstruct*)srcLsIn;
+	LR2::SRCstruct* srcLe = (LR2::SRCstruct*)srcLeIn;
+	LR2::SRCstruct* srcLb = (LR2::SRCstruct*)srcLbIn;
+	LR2::DSTstruct* dst = (LR2::DSTstruct*)dstIn;
+	LR2::Timer* T = (LR2::Timer*)TIn;
+	LR2::NoteStruct* lnObj = (LR2::NoteStruct*)lnObjIn;
+
+	typedef LR2::DSTdraw(__cdecl* tSetDSTdrawByTime)(LR2::DSTstruct dst, double time);
+	tSetDSTdrawByTime SetDSTdrawByTime = (tSetDSTdrawByTime)0x49A840;
+	typedef double(__cdecl* tGetTimeLapse)(int timerID, LR2::Timer* T);
+	tGetTimeLapse GetTimeLapse = (tGetTimeLapse)0x4B6B10;
+	typedef int(__cdecl* tGetSRCcycleNow)(LR2::SRCstruct src, double time);
+	tGetSRCcycleNow GetSRCcycleNow = (tGetSRCcycleNow)0x49ABF0;
+	typedef int(__cdecl* tAddDrawingBuffer)(LR2::DrawingBuf* drb, int grHandle, LR2::DSTdraw* dstd);
+	tAddDrawingBuffer AddDrawingBuffer = (tAddDrawingBuffer)0x49CEB0;
+
+	LR2::DSTdraw tDstd;
+	int grh;
+
+	if (dst->dstCount <= 0 || dst->dataSize <= 0 || srcLs->graphcount <= 0 || srcLe->graphcount <= 0 || srcLb->graphcount <= 0) return 0;
+
+	//body
+	tDstd = SetDSTdrawByTime(*dst, GetTimeLapse(dst->timer, T));
+	tDstd.w += sizeX;
+	tDstd.h += sizeY;
+	tDstd.x -= sizeX * 0.5;
+	tDstd.y -= sizeY * 0.5;
+	if (srcLb->timer == dst->timer) {
+		if (lnObj->active > 0) {
+			grh = srcLb->grHandles[GetSRCcycleNow(*srcLb, GetTimeLapse(srcLb->timer, T) - dst->draw->time)];
+		}
+		else {
+			grh = srcLb->grHandles[0];
+		}
+	}
+	else {
+		if (lnObj->active > 0) {
+			grh = srcLb->grHandles[GetSRCcycleNow(*srcLb, GetTimeLapse(srcLb->timer, T))];
+		}
+		else {
+			grh = srcLb->grHandles[0];
+		}
+	}
+	tDstd.x += shiftX;
+	tDstd.subHandle = dst->n;
+	tDstd.blend = 1;
+	tDstd.a = alpha;
+	tDstd.y += longY + tDstd.h;
+	tDstd.h = shiftY - longY - tDstd.h;
+	if (tDstd.time != -1 && grh != -1) AddDrawingBuffer(drb, grh, &tDstd);
+
+	//start
+	tDstd = SetDSTdrawByTime(*dst, GetTimeLapse(dst->timer, T));
+	tDstd.w += sizeX;
+	tDstd.h += sizeY;
+	tDstd.x -= sizeX * 0.5;
+	tDstd.y -= sizeY * 0.5;
+	tDstd.sortID += 2;
+	if (srcLs->timer == dst->timer) {
+		if (lnObj->active > 0) {
+			grh = srcLs->grHandles[GetSRCcycleNow(*srcLs, GetTimeLapse(srcLs->timer, T) - dst->draw->time)];
+		}
+		else {
+			grh = srcLs->grHandles[0];
+		}
+	}
+	else {
+		if (lnObj->active > 0) {
+			grh = srcLs->grHandles[GetSRCcycleNow(*srcLs, GetTimeLapse(srcLs->timer, T))];
+		}
+		else {
+			grh = srcLs->grHandles[0];
+		}
+	}
+	tDstd.x += shiftX;
+	tDstd.subHandle = dst->n;
+	tDstd.blend = 1;
+	tDstd.a = alpha;
+	tDstd.y += shiftY;
+	if (tDstd.time != -1 && grh != -1) AddDrawingBuffer(drb, grh, &tDstd);
+
+	//end
+	tDstd = SetDSTdrawByTime(*dst, GetTimeLapse(dst->timer, T));
+	tDstd.w += sizeX;
+	tDstd.h += sizeY;
+	tDstd.x -= sizeX * 0.5;
+	tDstd.y -= sizeY * 0.5;
+	tDstd.sortID += 1;
+	if (srcLe->timer == dst->timer) {
+		if (lnObj->active > 0) {
+			grh = srcLe->grHandles[GetSRCcycleNow(*srcLe, GetTimeLapse(srcLe->timer, T) - dst->draw->time)];
+		}
+		else {
+			grh = srcLe->grHandles[0];
+		}
+	}
+	else {
+		if (lnObj->active > 0) {
+			grh = srcLe->grHandles[GetSRCcycleNow(*srcLe, GetTimeLapse(srcLe->timer, T))];
+		}
+		else {
+			grh = srcLe->grHandles[0];
+		}
+	}
+	tDstd.x += shiftX;
+	tDstd.subHandle = dst->n;
+	tDstd.blend = 1;
+	tDstd.a = alpha;
+	tDstd.y += longY;
+	if (tDstd.time != -1 && grh != -1) AddDrawingBuffer(drb, grh, &tDstd);
+
+	return 1;
+}
+
+int Misc::OnAddDrawingBuffer_LN(void* drb, void* srcLs, void* srcLe, void* srcLb, void* dst, void* T, float shiftX, float shiftY, float longY, int alpha, float sizeX, float sizeY) {
+	Misc& misc = *(Misc*)(LR2HackBox::Get().mMisc);
+	if (misc.mIsLNAnimFix && misc.mCurrentDrawingLNObj) {
+		void* lnObj = misc.mCurrentDrawingLNObj;
+		misc.mCurrentDrawingLNObj = nullptr;
+		return misc.OnAddDrawingBuffer_LN_Fixed((LR2::DrawingBuf*)drb, (LR2::SRCstruct*)srcLs, (LR2::SRCstruct*)srcLe, (LR2::SRCstruct*)srcLb, (LR2::DSTstruct*)dst, (LR2::Timer*)T, shiftX, shiftY, longY, alpha, sizeX, sizeY, lnObj);
+	}
+	return AddDrawingBuffer_LN((LR2::DrawingBuf*)drb, (LR2::SRCstruct*)srcLs, (LR2::SRCstruct*)srcLe, (LR2::SRCstruct*)srcLb, (LR2::DSTstruct*)dst, (LR2::Timer*)T, shiftX, shiftY, longY, alpha, sizeX, sizeY);
+}
+
 bool Misc::Init(uintptr_t moduleBase) {
 	Misc::mModuleBase = moduleBase;
 
@@ -556,6 +692,7 @@ bool Misc::Init(uintptr_t moduleBase) {
 	mIsScreenshotsCopybuffer = LR2HackBox::Get().mConfig->ReadValue("bScreenshotsCopybuffer") == "true" ? true : false;
 	mIsMirrorGearshift = LR2HackBox::Get().mConfig->ReadValue("bMirrorGearshift") == "true" ? true : false;
 	mIsAnalogInput = LR2HackBox::Get().mConfig->ReadValue("bAnalogInput") == "true" ? true : false;
+	mIsLNAnimFix = LR2HackBox::Get().mConfig->ReadValue("bLNAnimFix") == "true" ? true : false;
 	((AnalogInput*)LR2HackBox::Get().mAnalogInput)->SetEnabled(mIsAnalogInput);
 	MirrorGearshift(mIsMirrorGearshift);
 
@@ -573,9 +710,17 @@ bool Misc::Init(uintptr_t moduleBase) {
 
 	mMidHooks.push_back(safetyhook::create_mid((void*)(moduleBase + 0x6D86), OnDrawNotesGetSongtimer));
 
+	mMidHooks.push_back(safetyhook::create_mid((void*)(moduleBase + 0x7A83), OnBeforeAddDrawingBuffer_LN));
+
 	if (MH_CreateHookEx((LPVOID)SaveDrawScreenToPNG, &OnSaveDrawScreenToPNG, &SaveDrawScreenToPNG) != MH_OK)
 	{
 		std::cout << "Couldn't hook SaveDrawScreenToPNG" << std::endl;
+		return false;
+	}
+
+	if (MH_CreateHookEx((LPVOID)AddDrawingBuffer_LN, &OnAddDrawingBuffer_LN, &AddDrawingBuffer_LN) != MH_OK)
+	{
+		std::cout << "Couldn't hook AddDrawingBuffer_LN" << std::endl;
 		return false;
 	}
 
@@ -652,6 +797,13 @@ void Misc::Menu() {
 	}
 	ImGui::SameLine();
 	HelpMarker("Mirrors controls for hi-speed and lanecover values, making lanecover on 1 and 2 instead of 6 and 7");
+
+	if (ImGui::Checkbox("Fix LN Animation", &mIsLNAnimFix)) {
+		LR2HackBox::Get().mConfig->WriteValue("bLNAnimFix", mIsLNAnimFix ? "true" : "false");
+		LR2HackBox::Get().mConfig->SaveConfig();
+	}
+	ImGui::SameLine();
+	HelpMarker("Fixes a bug, where all visible LNs of the same column would play the hold animation, instead of only the LN you are holding");
 
 	if (ImGui::Checkbox("Analog scratch support", &mIsAnalogInput)) {
 		((AnalogInput*)LR2HackBox::Get().mAnalogInput)->SetEnabled(mIsAnalogInput);
