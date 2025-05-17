@@ -55,6 +55,8 @@ public:
 	IFMEMORYTRACKER(ModFeature* mMemoryTracker = nullptr);
 
 	ConfigManager* mConfig = nullptr;
+
+	std::time_t mInitTime = 0;
 private:
 	LR2HackBox() = default;
 	~LR2HackBox() = default;
