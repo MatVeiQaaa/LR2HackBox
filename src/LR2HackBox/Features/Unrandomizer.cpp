@@ -26,8 +26,6 @@ void Unrandomizer::OnSetRandomSeed(SafetyHookContext& regs) {
 
 	uintptr_t* randomseed = &regs.eax;
 
-	// unrandomizer.seedString = std::to_string(*randomseed);
-
 	if (!unrandomizer.GetEnabled()) {
 		if (unrandomizer.mIsRRandom) {
 			typedef int(__cdecl* tGetRand)(int RandMax);
@@ -137,35 +135,6 @@ void Unrandomizer::OnAfterPopulateNoteMapping(SafetyHookContext& regs) {
 	Unrandomizer::RandomHistoryEntry entry(name, noteOrder);
 	Unrandomizer& unrandomizer = *(Unrandomizer*)(LR2HackBox::Get().mUnrandomizer);
 	unrandomizer.AddToHistory(entry);
-
-	/*
-	std::string seed = "Seed";
-	Unrandomizer::RandomHistoryEntry seedentry(seed, unrandomizer.seedString);
-	unrandomizer.AddToHistory(seedentry);
-
-	std::string filename = "output.txt";
-	bool exists = false;
-
-	std::ifstream inFile(filename);
-	if (inFile.is_open()) {
-		std::string line;
-		while (std::getline(inFile, line)) {
-			if (line.find(noteOrder) != std::string::npos) {
-				exists = true;
-				break;
-			}
-		}
-		inFile.close();
-	}
-
-	if (!exists) {
-		std::ofstream outFile(filename, std::ios::app);
-		if (outFile.is_open()) {
-			outFile << "case " << noteOrder << ": return " << unrandomizer.seedString << ";\n";
-			outFile.close();
-		}
-	}
-	*/
 
 	if (unrandomizer.mIsTrackRandom) unrandomizer.SetOrder(entry.GetRandom().c_str());
 }
