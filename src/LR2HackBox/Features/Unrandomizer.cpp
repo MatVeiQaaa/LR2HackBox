@@ -1,6 +1,8 @@
+#define NOMINMAX
+
 #include "Unrandomizer.hpp"
-#include "Unrandomizer_SeedMap.hpp"
-#include "Unrandomizer_SeedMap_5key.hpp"
+#include "Unrandomizer_SeedMap7K.hpp"
+#include "Unrandomizer_SeedMap5K.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -20,65 +22,64 @@
 
 #pragma comment(lib, "libSafetyhook.lib")
 
+static int GetSeed(int arrange, int keymode) {
+	switch (keymode) {
+	case 5: return GetSeed5K(arrange); break;
+	case 7: return GetSeed7K(arrange); break;
+	default: return 0xFFFF;
+	}
+}
+
 void Unrandomizer::OnSetRandomSeed(SafetyHookContext& regs) {
 	Unrandomizer& unrandomizer = *(Unrandomizer*)(LR2HackBox::Get().mUnrandomizer);
 	LR2::game& game = *LR2HackBox::Get().GetGame();
 
 	uintptr_t* randomseed = &regs.eax;
 
+	int keymode = std::min(game.sSelect.metaSelected.keymode, 7);
+
+	if (keymode != 5 && keymode != 7) return;
+
 	if (!unrandomizer.GetEnabled()) {
 		if (unrandomizer.mIsRRandom) {
 			typedef int(__cdecl* tGetRand)(int RandMax);
 			tGetRand GetRand = (tGetRand)0x6C95E0;
 
-			std::array<char, 7> laneOrder;
-			bool isMirror = GetRand(1);
+			std::array<char, 7> laneOrder = { '1', '2', '3', '4', '5', '6', '7' };
+			bool rotateRight = GetRand(1);
 			int rotateBy = 0;
 
-			if (unrandomizer.mIs5keysMode) {
-				std::array<char, 5> _laneOrder = !isMirror ? std::array<char, 5>{ '1', '2', '3', '4', '5' } : std::array<char, 5>{ '5', '4', '3', '2', '1' };
+			if (rotateRight) std::reverse(laneOrder.begin(), laneOrder.begin() + keymode);
 
-				while (rotateBy == 0) rotateBy = GetRand(4);
-				std::rotate(_laneOrder.rbegin(), _laneOrder.rbegin() + rotateBy, _laneOrder.rend());
-
-				for (int i = 0; i < 5; ++i) {
-					laneOrder[i] = _laneOrder[i];
-				}
-				laneOrder[5] = '6';
-				laneOrder[6] = '7';
-			} else {
-				laneOrder = !isMirror ? std::array<char, 7>{ '1', '2', '3', '4', '5', '6', '7' } : std::array<char, 7>{ '7', '6', '5', '4', '3', '2', '1' };
-
-				while (rotateBy == 0) rotateBy = GetRand(6);
-				std::rotate(laneOrder.rbegin(), laneOrder.rbegin() + rotateBy, laneOrder.rend());
-			}
+			while (rotateBy == 0) rotateBy = GetRand(keymode - 1);
+			std::rotate(laneOrder.begin(), laneOrder.begin() + rotateBy, laneOrder.begin() + keymode);
 			
-			uintptr_t unrandomseed = GetSeedMap(std::atoi(std::string_view(laneOrder).data()));
-			if (unrandomizer.mIs5keysMode) unrandomseed = Get5keysSeedMap(std::atoi(std::string_view(laneOrder).data()));
+			uintptr_t unrandomseed = GetSeed(std::atoi(std::string_view(laneOrder).data()), keymode);
 			if (unrandomseed == 0xFFFF) return;
 			*randomseed = unrandomseed;
 		}
 		return;
 	}
 
-	std::stringstream laneOrder;
+	std::string laneOrder;
+	laneOrder.resize(7);
 	for (int i = 0; i < std::size(unrandomizer.mLaneOrderL); i++) {
-		laneOrder << unrandomizer.mLaneOrderL[i];
+		laneOrder[i] = unrandomizer.mLaneOrderL[i] + '0';
 	}
 	if (unrandomizer.GetBWPermute()) {
 		unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
 
-		std::vector<char> blueArray(unrandomizer.mIs5keysMode ? std::vector<char>{ '2', '4' } : std::vector<char>{ '2', '4', '6' });
-		std::vector<char> whiteArray(unrandomizer.mIs5keysMode ? std::vector<char>{'1', '3', '5'} : std::vector<char>{ '1', '3', '5', '7' });
+		int blueKeymode = keymode == 5 ? 2 : 3;
+		int whiteKeymode = keymode == 5 ? 3 : 4;
+		std::vector<char> blueArray(std::vector<char>{ '2', '4', '6' });
+		std::vector<char> whiteArray(std::vector<char>{ '1', '3', '5', '7' });
 
-		std::shuffle(blueArray.begin(), blueArray.end(), std::default_random_engine(seed));
-		std::shuffle(whiteArray.begin(), whiteArray.end(), std::default_random_engine(seed));
-		std::string inputOrder = laneOrder.str();
-		std::stringstream resultingOrder;
+		std::shuffle(blueArray.begin(), blueArray.begin() + blueKeymode, std::default_random_engine(seed));
+		std::shuffle(whiteArray.begin(), whiteArray.begin() + whiteKeymode, std::default_random_engine(seed));
+		std::string inputOrder = laneOrder;
+		std::string resultingOrder = "1234567";
 
-		int laneCount = unrandomizer.mIs5keysMode ? std::size(unrandomizer.mLaneOrderL) - 2 : std::size(unrandomizer.mLaneOrderL);
-
-		for (int i = 0; i < laneCount; i++) {
+		for (int i = 0; i < keymode; i++) {
 			char columnVal;
 			if (inputOrder[i] % 2 == 0) {
 				columnVal = *blueArray.begin();
@@ -88,19 +89,13 @@ void Unrandomizer::OnSetRandomSeed(SafetyHookContext& regs) {
 				columnVal = *whiteArray.begin();
 				whiteArray.erase(whiteArray.begin());
 			}
-			resultingOrder << columnVal;
-		}
-
-		if (unrandomizer.mIs5keysMode) {
-			resultingOrder << '6';
-			resultingOrder << '7';
+			resultingOrder[i] = columnVal;
 		}
 
 		laneOrder.swap(resultingOrder);
 	}
 
-	uintptr_t unrandomseed = GetSeedMap(std::atoi(laneOrder.str().c_str()));
-	if (unrandomizer.mIs5keysMode) unrandomseed = Get5keysSeedMap(std::atoi(laneOrder.str().c_str()));
+	uintptr_t unrandomseed = GetSeed(std::atoi(laneOrder.c_str()), keymode);
 	if (unrandomseed == 0xFFFF) return;
 	*randomseed = unrandomseed;
 }
@@ -141,6 +136,9 @@ void Unrandomizer::OnAfterPopulateNoteMapping(SafetyHookContext& regs) {
 
 bool Unrandomizer::Init(uintptr_t moduleBase) {
 	Unrandomizer::mModuleBase = moduleBase;
+
+	LR2::game* game = LR2HackBox::Get().GetGame();
+	Unrandomizer::mKeymode = &game->sSelect.metaSelected.keymode;
 
 	mMidHooks.push_back(safetyhook::create_mid((void*)(moduleBase + 0xB07DB), OnSetRandomSeed));
 	mMidHooks.push_back(safetyhook::create_mid((void*)(moduleBase + 0xB483B), OnAfterPopulateNoteMapping));
@@ -241,8 +239,6 @@ void Unrandomizer::DragAndDropKeyDisplay(UnrandomizerState state) {
 	}
 	int sideCount = state == UnrandomizerState_DP ? 2 : 1;
 
-	int laneCount = mIs5keysMode ? std::size(mLaneOrderL) - 2 : std::size(mLaneOrderL);
-
 	for (int side = 0; side < sideCount; side++) {
 		uint32_t* laneOrder;
 		std::string dragDropRefName;
@@ -268,8 +264,8 @@ void Unrandomizer::DragAndDropKeyDisplay(UnrandomizerState state) {
 			}
 		}
 		ImGui::NewLine();
-		for (int i = 0; i < laneCount; i++) {
-			ImGui::PushID(i + laneCount * side);
+		for (int i = 0; i < mGuiKeymode; i++) {
+			ImGui::PushID(i + mGuiKeymode * side);
 			ImGui::SameLine();
 			if (laneOrder[i] % 2 == 0) {
 				ImGui::PushStyleColor(ImGuiCol(ImGuiCol_Button), IM_COL32(0, 0, 139, 255));
@@ -318,12 +314,7 @@ void Unrandomizer::SetOrder(const char* arrange) {
 }
 
 void Unrandomizer::MirrorOrder() {
-	if (mIs5keysMode) {
-		std::reverse(std::begin(mLaneOrderL), std::begin(mLaneOrderL) + 5);
-	}
-	else {
-		std::reverse(std::begin(mLaneOrderL), std::end(mLaneOrderL));
-	}
+	std::reverse(std::begin(mLaneOrderL), std::begin(mLaneOrderL) + mGuiKeymode);
 }
 
 void Unrandomizer::Menu() {
@@ -332,6 +323,12 @@ void Unrandomizer::Menu() {
 		ImGui::Text("Only 7K and 5K mode is currently implemented.");
 		mIsEnabled = false;
 		return;
+	}
+	int lastKeymode = mGuiKeymode;
+	mGuiKeymode = *mKeymode ? *mKeymode : mGuiKeymode;
+
+	if (lastKeymode != mGuiKeymode) {
+		SetOrder("1234567");
 	}
 	UnrandomizerState unrandomizerState;
 	/*if (!game->gameplay.mode) {
@@ -348,7 +345,7 @@ void Unrandomizer::Menu() {
 	ImGui::Text("Controls");
 
 	ImGui::Indent();
-	if (GetSeedMap(mLaneOrderNumL) == 0xFFFF) {
+	if (GetSeed(mLaneOrderNumL, mGuiKeymode) == 0xFFFF) {
 		ImGui::Text("This arrange is missing from the seed map...");
 		mIsEnabled = false;
 	}
@@ -368,10 +365,6 @@ void Unrandomizer::Menu() {
 	}
 	ImGui::SameLine();
 	HelpMarker("R-Random cyclically shifts the columns by a random amount, as well as has a chance to mirror them\n\nOnly this or random trainer can be enabled at a time");
-	if (ImGui::Checkbox("5keys Mode", &mIs5keysMode)) {
-		// initialize order and do not show 6, 7 lines
-		SetOrder("1234567");
-	}
 	ImGui::Unindent();
 }
 

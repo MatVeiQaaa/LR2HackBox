@@ -18,7 +18,7 @@
     <ClInclude Include="Features\Unrandomizer.hpp">
       <Filter>Header Files\Features</Filter>
     </ClInclude>
-    <ClInclude Include="Features\Unrandomizer_SeedMap.hpp">
+    <ClInclude Include="Features\Unrandomizer_SeedMap7K.hpp">
       <Filter>Header Files\Features</Filter>
     </ClInclude>
     <ClInclude Include="Features\Funny.hpp">
@@ -33,7 +33,7 @@
     <ClInclude Include="Features\AnalogInput.hpp">
       <Filter>Header Files\Features</Filter>
     </ClInclude>
-    <ClInclude Include="Features\Unrandomizer_SeedMap_5key.hpp">
+    <ClInclude Include="Features\Unrandomizer_SeedMap5K.hpp">
       <Filter>Header Files\Features</Filter>
     </ClInclude>
   </ItemGroup>

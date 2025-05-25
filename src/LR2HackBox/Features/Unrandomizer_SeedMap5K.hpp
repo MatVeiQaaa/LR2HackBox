@@ -1,4 +1,4 @@
-inline int Get5keysSeedMap(int in) {
+inline int GetSeed5K(int in) {
 	switch (in) {
 	case 3451267: return 11168;
 	case 2315467: return 5751;
