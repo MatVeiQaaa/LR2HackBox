@@ -51,6 +51,7 @@ private:
 	bool mIsBWPermute = false;
 	bool mIsTrackRandom = false;
 	bool mIsRRandom = false;
+	bool mIs5keysMode = false;
 	uint32_t mLaneOrderL[7] = { 1, 2, 3, 4, 5, 6, 7 };
 	int mLaneOrderNumL = 1234567;
 	uint32_t mLaneOrderR[7] = { 1, 2, 3, 4, 5, 6, 7 };

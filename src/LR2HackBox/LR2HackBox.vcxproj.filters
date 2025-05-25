@@ -33,6 +33,9 @@
     <ClInclude Include="Features\AnalogInput.hpp">
       <Filter>Header Files\Features</Filter>
     </ClInclude>
+    <ClInclude Include="Features\Unrandomizer_SeedMap_5key.hpp">
+      <Filter>Header Files\Features</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="LR2HackBox.cpp">
