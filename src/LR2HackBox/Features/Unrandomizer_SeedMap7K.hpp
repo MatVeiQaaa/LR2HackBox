@@ -1,4 +1,4 @@
-inline int GetSeedMap(int in) {
+inline int GetSeed7K(int in) {
 	switch (in) {
 	case 2561437: return 778;
 	case 2637415: return 9659;
