@@ -8,7 +8,7 @@ The .dll file must be injected into the game process in any convenient way. I re
 ImGui menu from which you can control all of the features can be brought up with 'INSERT' key in-game. It can be later rebound to a different key from the menu behind "Binds" button in the bottom-right corner.
 
 Features:
-- Unrandomizer – Allows you to control which arrange 'RANDOM' function will result in. Currently works only for 7K SP mode. Also has a history of each random arrange you got, regardless of using unrandomizer or not.
+- Unrandomizer – Allows you to control which arrange 'RANDOM' function will result in. Currently works only for 5K and 7K SP modes. Also has a history of each random arrange you got, regardless of using unrandomizer or not.
 - R-Random – 'RANDOM' function acts as R-Random, where columns "rotate", or cyclically shift, by some offset, as well as have a chance to mirror.
 - Restart Tweaks – Adds ability to restart from play scene with new or same random arrange (if random is used), as well as from result screen.
 - Random Select – Adds an assortment of 'RANDOM SELECT' entries as last elements of song select list, when a song folder is opened. Upon selection of such entry, a song matching the filter will be started at random from that folder. Filters are 'UNPLAYED', 'FAILED', '<HC' and '<AAA'.
@@ -20,3 +20,5 @@ Features:
 - Analog Scratch Support – Allows translation of absolute axis scratch into button input for controllers that don't have other modes. When used, scratch should be unbound in LR2 input settings menu.
 - Hide Scratch Notes – Makes scratch notes invisible. For no practical reason. Only works for 7K SP.
 - Metronome – Enables the metronome sound in playing scene. SFX can be customized with 'metronome-beat.wav' and 'metronome-measure' in 'LR2files\Sound\LR2HackBox\' directory for respective sounds. If those files are not present, it will default to using samples for closing and opening (in that order) a folder.
+- Autoadjust Clamp – Clamps the autoadjust to the specified value range, not allowing it to adjust below min and above max values.
+- Autoadjust Reset – Adds new type for autoadjust, which can be selected through settings menu of the game. It's called 'RESET', and after each play it resets the adjust to value before you started playing.

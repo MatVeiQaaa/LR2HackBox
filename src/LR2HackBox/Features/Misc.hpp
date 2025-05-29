@@ -24,8 +24,11 @@ private:
 
 	static void OnRandomMixInput(SafetyHookContext& regs);
 	static void OnSceneInitSwitch(SafetyHookContext& regs);
+	static void OnSceneExitSwitch(SafetyHookContext& regs);
 	static void OnOpenFolderPlaySound(SafetyHookContext& regs);
 	void OnDecideInit();
+	void OnSelectExit();
+	void OnPlayExit();
 
 	bool mRandSelCustomEntry = false;
 
@@ -48,6 +51,18 @@ private:
 
 	void* mCurrentDrawingLNObj = nullptr;
 
+	static void OnAutoadjustInc(SafetyHookContext& regs);
+	static void OnAutoadjustDec(SafetyHookContext& regs);
+
+	int mAutoadjustClampMin = -100;
+	int mAutoadjustClampMax = 100;
+
+	static int OnSetObjectString(unsigned int num, void* string, void** objectList);
+
+	void SetAutoadjustReset(bool value);
+
+	int mAutoadjustResetLastVal = 0;
+
 	void StartRandomFromFolder();
 
 	void MirrorGearshift(bool mirror);
@@ -63,4 +78,6 @@ private:
 	bool mIsMirrorGearshift = false;
 	bool mIsAnalogInput = false;
 	bool mIsLNAnimFix = false;
+	bool mIsAutoadjustClamp = false;
+	bool mIsAutoadjustReset = false;
 };

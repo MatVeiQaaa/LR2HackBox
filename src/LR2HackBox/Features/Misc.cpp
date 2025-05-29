@@ -127,10 +127,6 @@ void Misc::OnPlayISetSelecter(SafetyHookContext& regs) {
 
 void Misc::OnInit(SafetyHookContext& regs) {
 	LR2::game& game = *LR2HackBox::Get().GetGame();
-	mOrigGaugeType = game.config.play.gaugeOption[0];
-	mMetronomeLastPlayedBeat = 0;
-	mMetronomePrevMeasureIdx = -1;
-	mCurrentDrawingLNObj = nullptr;
 }
 
 void Misc::OnInitPlay(SafetyHookContext& regs) {
@@ -249,26 +245,55 @@ void Misc::OnDecideInit() {
 }
 
 void Misc::OnPlayInit() {
-	if (!mIsMetronome) return;
-
 	LR2::game& game = *LR2HackBox::Get().GetGame();
+	mOrigGaugeType = game.config.play.gaugeOption[0];
+	mCurrentDrawingLNObj = nullptr;
 
-	typedef int(__cdecl* tLoadSound)(LR2::AUDIO* aud, LR2::SOUNDDATA* sound, LR2::CSTR filepath, int loop, int disableDSP, int previewFlag);
-	tLoadSound LoadSound = (tLoadSound)0x4B8BB0;
+	if (game.config.play.autojudge == 3) game.config.play.judgetiming = mAutoadjustResetLastVal;
 
-	LoadSound(&game.audio, &metronomeMeasureFx, LR2::CSTR("LR2files\\Sound\\LR2HackBox\\metronome-measure.wav"), 0, game.config.sound.disabledsp, 0);
-	LoadSound(&game.audio, &metronomeBeatFx, LR2::CSTR("LR2files\\Sound\\LR2HackBox\\metronome-beat.wav"), 0, game.config.sound.disabledsp, 0);
+	mMetronomeLastPlayedBeat = 0;
+	mMetronomePrevMeasureIdx = -1;
+	if (mIsMetronome) {
+		typedef int(__cdecl* tLoadSound)(LR2::AUDIO* aud, LR2::SOUNDDATA* sound, LR2::CSTR filepath, int loop, int disableDSP, int previewFlag);
+		tLoadSound LoadSound = (tLoadSound)0x4B8BB0;
+
+		LoadSound(&game.audio, &metronomeMeasureFx, LR2::CSTR("LR2files\\Sound\\LR2HackBox\\metronome-measure.wav"), 0, game.config.sound.disabledsp, 0);
+		LoadSound(&game.audio, &metronomeBeatFx, LR2::CSTR("LR2files\\Sound\\LR2HackBox\\metronome-beat.wav"), 0, game.config.sound.disabledsp, 0);
+	}
 }
 
 void Misc::OnSceneInitSwitch(SafetyHookContext& regs) {
 	Misc& misc = *(Misc*)(LR2HackBox::Get().mMisc);
 
 	switch (regs.eax) {
-	case 3: // Decide
+	case 3:
 		misc.OnDecideInit();
 		break;
-	case 4: // Play
+	case 4:
 		misc.OnPlayInit();
+		break;
+	}
+}
+
+void Misc::OnSelectExit() {
+	LR2::game& game = *LR2HackBox::Get().GetGame();
+	mAutoadjustResetLastVal = game.config.play.judgetiming;
+}
+
+void Misc::OnPlayExit() {
+	LR2::game& game = *LR2HackBox::Get().GetGame();
+	if (game.config.play.autojudge == 3) game.config.play.judgetiming = mAutoadjustResetLastVal;
+}
+
+void Misc::OnSceneExitSwitch(SafetyHookContext& regs) {
+	Misc& misc = *(Misc*)(LR2HackBox::Get().mMisc);
+
+	switch (regs.edi) {
+	case 2:
+		misc.OnSelectExit();
+		break;
+	case 4:
+		misc.OnPlayExit();
 		break;
 	}
 }
@@ -682,6 +707,45 @@ int Misc::OnAddDrawingBuffer_LN(void* drb, void* srcLs, void* srcLe, void* srcLb
 	return AddDrawingBuffer_LN((LR2::DrawingBuf*)drb, (LR2::SRCstruct*)srcLs, (LR2::SRCstruct*)srcLe, (LR2::SRCstruct*)srcLb, (LR2::DSTstruct*)dst, (LR2::Timer*)T, shiftX, shiftY, longY, alpha, sizeX, sizeY);
 }
 
+void Misc::OnAutoadjustDec(SafetyHookContext& regs) {
+	Misc& misc = *(Misc*)(LR2HackBox::Get().mMisc);
+	if (!misc.mIsAutoadjustClamp) return;
+
+	LR2::game& game = *LR2HackBox::Get().GetGame();
+	if (game.gameplay.autojudge_midsum == 0) return;
+	if (game.config.play.judgetiming <= misc.mAutoadjustClampMin) game.config.play.judgetiming++;
+}
+
+void Misc::OnAutoadjustInc(SafetyHookContext& regs) {
+	Misc& misc = *(Misc*)(LR2HackBox::Get().mMisc);
+	if (!misc.mIsAutoadjustClamp) return;
+
+	LR2::game& game = *LR2HackBox::Get().GetGame();
+	if (game.config.play.judgetiming >= misc.mAutoadjustClampMax) game.config.play.judgetiming--;
+}
+
+void Misc::SetAutoadjustReset(bool enable) {
+	char* autoadjustModeUpperLimit = (char*)0x425007;
+
+	DWORD oldProtection = 0;
+	BOOL hResult = VirtualProtect(autoadjustModeUpperLimit, 1, PAGE_EXECUTE_READWRITE, &oldProtection);
+
+	*autoadjustModeUpperLimit = enable ? 3 : 2;
+
+	DWORD discard = 0;
+	hResult = VirtualProtect(autoadjustModeUpperLimit, 1, oldProtection, &discard);
+}
+
+typedef int(__cdecl* tSetObjectString)(unsigned int num, LR2::CSTR string, LR2::CSTR* objectList);
+tSetObjectString SetObjectString = (tSetObjectString)0x4B6C40;
+int Misc::OnSetObjectString(unsigned int num, void* string, void** objectList) {
+	LR2::game& game = *LR2HackBox::Get().GetGame();
+	if (num == 80 && game.config.play.autojudge == 3) {
+		return SetObjectString(80, "RESET", game.txtStruct.objectStr);
+	}
+	return SetObjectString(num, (LR2::CSTR&)string, (LR2::CSTR*)objectList);
+}
+
 bool Misc::Init(uintptr_t moduleBase) {
 	Misc::mModuleBase = moduleBase;
 
@@ -693,8 +757,21 @@ bool Misc::Init(uintptr_t moduleBase) {
 	mIsMirrorGearshift = LR2HackBox::Get().mConfig->ReadValue("bMirrorGearshift") == "true" ? true : false;
 	mIsAnalogInput = LR2HackBox::Get().mConfig->ReadValue("bAnalogInput") == "true" ? true : false;
 	mIsLNAnimFix = LR2HackBox::Get().mConfig->ReadValue("bLNAnimFix") == "true" ? true : false;
+	mIsAutoadjustClamp = LR2HackBox::Get().mConfig->ReadValue("bAutoadjustClamp") == "true" ? true : false;
+	mIsAutoadjustReset = LR2HackBox::Get().mConfig->ReadValue("bAutoadjustReset") == "true" ? true : false;
+
+	try {
+		mAutoadjustClampMin = std::stoi(LR2HackBox::Get().mConfig->ReadValue("iAutoadjustClampMin"));
+	}
+	catch (...) {}
+	try {
+		mAutoadjustClampMax = std::stoi(LR2HackBox::Get().mConfig->ReadValue("iAutoadjustClampMax"));
+	}
+	catch (...) {}
+
 	((AnalogInput*)LR2HackBox::Get().mAnalogInput)->SetEnabled(mIsAnalogInput);
 	MirrorGearshift(mIsMirrorGearshift);
+	SetAutoadjustReset(mIsAutoadjustReset);
 
 	mMidHooks.push_back(safetyhook::create_mid((void*)(moduleBase + 0x9573), OnSetRetryFlag));
 	mMidHooks.push_back(safetyhook::create_mid((void*)(moduleBase + 0x0198C1), OnPlayISetSelecter));
@@ -703,6 +780,7 @@ bool Misc::Init(uintptr_t moduleBase) {
 
 	mMidHooks.push_back(safetyhook::create_mid((void*)(moduleBase + 0x029AFA), OnRandomMixInput));
 	mMidHooks.push_back(safetyhook::create_mid((void*)(moduleBase + 0x031BB6), OnSceneInitSwitch));
+	mMidHooks.push_back(safetyhook::create_mid((void*)(moduleBase + 0x033830), OnSceneExitSwitch));
 	mMidHooks.push_back(safetyhook::create_mid((void*)(moduleBase + 0x01EE32), OnOpenFolderPlaySound));
 
 	mMidHooks.push_back(safetyhook::create_mid((void*)(moduleBase + 0x0B32AD), OnAddToAvgBpmSum));
@@ -711,6 +789,9 @@ bool Misc::Init(uintptr_t moduleBase) {
 	mMidHooks.push_back(safetyhook::create_mid((void*)(moduleBase + 0x6D86), OnDrawNotesGetSongtimer));
 
 	mMidHooks.push_back(safetyhook::create_mid((void*)(moduleBase + 0x7A83), OnBeforeAddDrawingBuffer_LN));
+
+	mMidHooks.push_back(safetyhook::create_mid((void*)(moduleBase + 0x02C84F), OnAutoadjustInc));
+	mMidHooks.push_back(safetyhook::create_mid((void*)(moduleBase + 0x02C854), OnAutoadjustDec));
 
 	if (MH_CreateHookEx((LPVOID)SaveDrawScreenToPNG, &OnSaveDrawScreenToPNG, &SaveDrawScreenToPNG) != MH_OK)
 	{
@@ -721,6 +802,12 @@ bool Misc::Init(uintptr_t moduleBase) {
 	if (MH_CreateHookEx((LPVOID)AddDrawingBuffer_LN, &OnAddDrawingBuffer_LN, &AddDrawingBuffer_LN) != MH_OK)
 	{
 		std::cout << "Couldn't hook AddDrawingBuffer_LN" << std::endl;
+		return false;
+	}
+
+	if (MH_CreateHookEx((LPVOID)SetObjectString, &OnSetObjectString, &SetObjectString) != MH_OK)
+	{
+		std::cout << "Couldn't hook SetObjectString" << std::endl;
 		return false;
 	}
 
@@ -804,6 +891,28 @@ void Misc::Menu() {
 	}
 	ImGui::SameLine();
 	HelpMarker("Fixes a bug, where all visible LNs of the same column would play the hold animation, instead of only the LN you are holding");
+
+	if (ImGui::Checkbox("Autoadjust Clamp", &mIsAutoadjustClamp)) {
+		LR2HackBox::Get().mConfig->WriteValue("bAutoadjustClamp", mIsAutoadjustClamp ? "true" : "false");
+		LR2HackBox::Get().mConfig->SaveConfig();
+	}
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(80.f);
+	if (ImGui::InputInt2("Min-Max", &mAutoadjustClampMin)) {
+		LR2HackBox::Get().mConfig->WriteValue("iAutoadjustClampMin", std::to_string(mAutoadjustClampMin));
+		LR2HackBox::Get().mConfig->WriteValue("iAutoadjustClampMax", std::to_string(mAutoadjustClampMax));
+		LR2HackBox::Get().mConfig->SaveConfig();
+	}
+	ImGui::SameLine();
+	HelpMarker("Clamps the autoadjust to the bounds specified in 'Min-Max' boxes, not allowing it to adjust below min and above max");
+
+	if (ImGui::Checkbox("Autoadjust Reset", &mIsAutoadjustReset)) {
+		SetAutoadjustReset(mIsAutoadjustReset);
+		LR2HackBox::Get().mConfig->WriteValue("bAutoadjustReset", mIsAutoadjustReset ? "true" : "false");
+		LR2HackBox::Get().mConfig->SaveConfig();
+	}
+	ImGui::SameLine();
+	HelpMarker("Adds new type for autoadjust, which can be selected through settings menu of the game. It's called 'RESET', and after each play it resets the adjust to value before you started playing");
 
 	if (ImGui::Checkbox("Analog scratch support", &mIsAnalogInput)) {
 		((AnalogInput*)LR2HackBox::Get().mAnalogInput)->SetEnabled(mIsAnalogInput);
