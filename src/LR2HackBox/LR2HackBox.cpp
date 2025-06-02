@@ -20,6 +20,7 @@
 #pragma comment(lib, "Helpers.lib")
 #pragma comment(lib, "ImGuiInjector.lib")
 #pragma comment(lib, "BaseModels.lib")
+#pragma comment(lib, "LR2Mem.lib")
 
 #if defined _M_X64
 #pragma comment(lib, "libMinHook.x64.lib")
