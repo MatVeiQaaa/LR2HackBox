@@ -44,7 +44,7 @@ bool LR2HackBox::Hook() {
 	LR2::Init();
 	while (!LR2::isInit) Sleep(1);
 
-	mInitTime = std::time(nullptr);
+	mInitTime = std::chrono::system_clock::now();
 
 	ImGuiInjector::Get().AddMenu(&(LR2HackBox::mMenu));
 	
@@ -97,11 +97,10 @@ void LR2HackBoxMenu::Loop() {
 
 	ImGui::Text("LR2HackBox Menu");
 
-	std::time_t timeSinceInit = std::time(nullptr) - LR2HackBox::Get().mInitTime;
-	std::tm* dateTime = std::gmtime(&timeSinceInit);
+	std::chrono::hh_mm_ss timeSinceInit(std::chrono::system_clock::now() - LR2HackBox::Get().mInitTime);
 
 	ImGui::SameLine(ImGui::GetWindowWidth() - ImGui::CalcTextSize("Time running: 00:00:00").x - 15.f);
-	ImGui::Text("Time running: %02d:%02d:%02d", dateTime->tm_hour, dateTime->tm_min, dateTime->tm_sec);
+	ImGui::Text("Time running: %02d:%02d:%02d", timeSinceInit.hours(), timeSinceInit.minutes(), timeSinceInit.seconds());
 
 	if (ImGui::CollapsingHeader("Unrandomizer")) {
 		((Unrandomizer*)LR2HackBox::Get().mUnrandomizer)->Menu();

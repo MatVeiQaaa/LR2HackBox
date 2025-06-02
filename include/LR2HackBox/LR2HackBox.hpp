@@ -7,6 +7,7 @@
 
 #include <unordered_map>
 #include <string>
+#include <chrono>
 
 #ifndef NDEBUG
 #define IFDEBUG(x) x
@@ -56,7 +57,7 @@ public:
 
 	ConfigManager* mConfig = nullptr;
 
-	std::time_t mInitTime = 0;
+	std::chrono::system_clock::time_point mInitTime;
 private:
 	LR2HackBox() = default;
 	~LR2HackBox() = default;
