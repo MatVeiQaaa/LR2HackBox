@@ -1,6 +1,7 @@
 #define NOMINMAX
 #include "ScoreCannon.hpp"
 
+#include <cmath>
 #include <format>
 #include <print>
 #include <codecvt>
@@ -100,38 +101,38 @@ static std::string GetExGradeDelta(const int exScore, const int exScoreMax) {
 	float score = static_cast<float>(exScore);
 	float scoreMax = static_cast<float>(exScoreMax);
 	Grade gradeNotation(F);
-	int gradeScore = 0;
+	int minGradeScore = 0;
 	if (score / scoreMax > 8.5f / 9.f) {
 		gradeNotation = MAX;
-		gradeScore = scoreMax;
+		minGradeScore = scoreMax;
 	}
 	else if (score / scoreMax > 7.5f / 9.f) {
 		gradeNotation = AAA;
-		gradeScore = static_cast<int>(scoreMax * 8.f / 9.f);
+		minGradeScore = std::ceil(scoreMax * 8.f / 9.f);
 	}
 	else if (score / scoreMax > 6.5f / 9.f) {
 		gradeNotation = AA;
-		gradeScore = static_cast<int>(scoreMax * 7.f / 9.f);
+		minGradeScore = std::ceil(scoreMax * 7.f / 9.f);
 	}
 	else if (score / scoreMax > 5.5f / 9.f) {
 		gradeNotation = A;
-		gradeScore = static_cast<int>(scoreMax * 6.f / 9.f);
+		minGradeScore = std::ceil(scoreMax * 6.f / 9.f);
 	}
 	else if (score / scoreMax > 4.5f / 9.f) {
 		gradeNotation = B;
-		gradeScore = static_cast<int>(scoreMax * 5.f / 9.f);
+		minGradeScore = std::ceil(scoreMax * 5.f / 9.f);
 	}
 	else if (score / scoreMax > 3.5f / 9.f) {
 		gradeNotation = C;
-		gradeScore = static_cast<int>(scoreMax * 4.f / 9.f);
+		minGradeScore = std::ceil(scoreMax * 4.f / 9.f);
 	}
 	else if (score / scoreMax > 2.5f / 9.f) {
 		gradeNotation = D;
-		gradeScore = static_cast<int>(scoreMax * 3.f / 9.f);
+		minGradeScore = std::ceil(scoreMax * 3.f / 9.f);
 	}
 	else {
 		gradeNotation = E;
-		gradeScore = static_cast<int>(scoreMax * 2.f / 9.f);
+		minGradeScore = std::ceil(scoreMax * 2.f / 9.f);
 	}
 
 	return std::format("{}{}", grades[gradeNotation], GetDelta(score, gradeScore));
