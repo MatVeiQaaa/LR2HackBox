@@ -80,17 +80,8 @@ static unsigned int GetLampRGB(const ScoreCannon::Score& score) {
 		return RGB(254,54,54);
 	case ScoreCannon::Score::Lamp::FULLCOMBO:
 		return RGB(120,255,247);
-	case ScoreCannon::Score::Lamp::PERFECT:
-		return RGB(251,230,255);
-	case ScoreCannon::Score::Lamp::MAX:
-		return RGB(255,255,255);
-	case ScoreCannon::Score::Lamp::NOPLAY:
-		return RGB(127,127,127);
-	case ScoreCannon::Score::Lamp::ASSISTCLEAR:
-		return RGB(37,150,190);
-	default:
-		return 0;
 	}
+	return 0;
 }
 
 static std::string GetDelta(const int val1, const int val2) {

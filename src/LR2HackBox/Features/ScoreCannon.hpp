@@ -13,10 +13,6 @@ public:
 			GROOVECLEAR,
 			HARDCLEAR,
 			FULLCOMBO,
-			PERFECT,
-			MAX,
-			ASSISTCLEAR,
-			NONE
 		};
 		enum Target {
 			NOTARGET,
