@@ -188,7 +188,7 @@ std::string ScoreCannon::GetJsonString(const Score& score) {
 			{
 				{"title", std::format("{} {} {} {}", score.folder, score.title, score.subtitle, lamps[score.lamp])},
 				{"color", GetLampRGB(score)},
-				{"url", std::format("http://www.dream-pro.info/~lavalse/LR2IR/search.cgi?mode=ranking&bmsmd5={}", score.md5)},
+				{"url", std::format("https://lr2ir.com/charts/{}", score.md5)},
 				{"author", {
 					{"name", std::format("{} just got a new score!", mGameName)}
 				}},
